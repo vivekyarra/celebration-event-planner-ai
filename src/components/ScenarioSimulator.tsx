@@ -66,7 +66,7 @@ export const ScenarioSimulator: React.FC<ScenarioSimulatorProps> = ({
       <div className="section-header">
         <div>
           <h2 className="section-title">
-            <Layers size={24} color="#6366f1" />
+            <Layers size={24} color="#6366f1" aria-hidden="true" />
             Budget "What-If" Scenario Simulator
           </h2>
           <p className="section-subtitle">
@@ -143,12 +143,12 @@ export const ScenarioSimulator: React.FC<ScenarioSimulatorProps> = ({
             >
               {sc.isActive ? (
                 <>
-                  <Check size={16} />
+                  <Check size={16} aria-hidden="true" />
                   <span>Currently Applied</span>
                 </>
               ) : (
                 <>
-                  <ArrowRight size={16} />
+                  <ArrowRight size={16} aria-hidden="true" />
                   <span>Apply {sc.name.split(' ')[0]} Scenario</span>
                 </>
               )}

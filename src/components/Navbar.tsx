@@ -114,7 +114,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             title="Open Command Palette (Ctrl+K)"
             aria-label="Open Command Palette"
           >
-            <Command size={14} />
+            <Command size={14} aria-hidden="true" />
             <span style={{ fontSize: '0.78rem' }}>Commands (Ctrl+K)</span>
           </button>
 
@@ -124,7 +124,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={triggerCelebrationConfetti}
             aria-label="Celebrate with festive confetti"
           >
-            <PartyPopper size={16} />
+            <PartyPopper size={16} aria-hidden="true" />
             <span>Celebrate!</span>
           </button>
 
@@ -134,7 +134,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={onOpenWizard}
             aria-label="Create or customize new celebration"
           >
-            <PlusCircle size={16} />
+            <PlusCircle size={16} aria-hidden="true" />
             <span>New Celebration</span>
           </button>
 
@@ -145,7 +145,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             aria-label="Print event dossier report"
             title="Print or Save PDF Dossier"
           >
-            <Printer size={16} />
+            <Printer size={16} aria-hidden="true" />
             <span className="no-mobile">Print Dossier</span>
           </button>
 
@@ -156,7 +156,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             aria-label="Gemini API Key configuration"
             title="Configure Gemini 1.5 Flash API Key"
           >
-            <KeyRound size={16} color={hasApiKey ? '#34d399' : undefined} />
+            <KeyRound size={16} color={hasApiKey ? '#34d399' : undefined} aria-hidden="true" />
             <span style={{ fontSize: '0.78rem' }}>{hasApiKey ? 'Gemini Live' : 'AI Settings'}</span>
           </button>
         </nav>

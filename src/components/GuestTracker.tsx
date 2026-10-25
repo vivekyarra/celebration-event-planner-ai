@@ -9,6 +9,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { EventPlan, Guest, RSVPStatus } from '../types';
+import { useGuestManager } from '../hooks/useGuestManager';
 
 interface GuestTrackerProps {
   plan: EventPlan;
@@ -24,6 +25,17 @@ export const GuestTracker: React.FC<GuestTrackerProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [announcement, setAnnouncement] = useState('');
 
+  // Business logic delegated to custom hook
+  const {
+    guests,
+    addGuest,
+    updateGuestStatus,
+    confirmedCount,
+    pendingCount,
+    declinedCount,
+    totalHeadcount,
+  } = useGuestManager(plan.guests, onUpdateGuests);
+
   // New guest state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -31,18 +43,10 @@ export const GuestTracker: React.FC<GuestTrackerProps> = ({
   const [plusOnes, setPlusOnes] = useState(0);
   const [tableNumber, setTableNumber] = useState<string>('1');
 
-  const confirmedCount = plan.guests.filter((g) => g.rsvpStatus === 'confirmed').length;
-  const pendingCount = plan.guests.filter((g) => g.rsvpStatus === 'pending').length;
-  const declinedCount = plan.guests.filter((g) => g.rsvpStatus === 'declined').length;
-  const totalHeadcount = plan.guests
-    .filter((g) => g.rsvpStatus === 'confirmed')
-    .reduce((sum, g) => sum + 1 + g.plusOnes, 0);
-
   const handleStatusChange = (id: string, newStatus: RSVPStatus) => {
-    const targetGuest = plan.guests.find((g) => g.id === id);
+    const targetGuest = guests.find((g) => g.id === id);
     const guestName = targetGuest ? targetGuest.name : 'Guest';
-    const updated = plan.guests.map((g) => (g.id === id ? { ...g, rsvpStatus: newStatus } : g));
-    onUpdateGuests(updated);
+    updateGuestStatus(id, newStatus);
     setAnnouncement(`${guestName} RSVP status updated to ${newStatus}`);
   };
 
@@ -50,17 +54,15 @@ export const GuestTracker: React.FC<GuestTrackerProps> = ({
     e.preventDefault();
     if (!name) return;
 
-    const newGuest: Guest = {
-      id: `guest-${Date.now()}`,
+    addGuest({
       name,
       email: email || `${name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
       dietary,
       plusOnes,
       tableNumber: parseInt(tableNumber, 10) || null,
       rsvpStatus: 'pending',
-    };
+    });
 
-    onUpdateGuests([...plan.guests, newGuest]);
     setName('');
     setEmail('');
     setDietary('Standard');
@@ -70,7 +72,7 @@ export const GuestTracker: React.FC<GuestTrackerProps> = ({
 
   const exportCSV = () => {
     const headers = ['Name', 'Email', 'RSVP Status', 'Dietary Restrictions', 'Table', 'Plus Ones'];
-    const rows = plan.guests.map((g) => [
+    const rows = guests.map((g) => [
       `"${g.name}"`,
       `"${g.email}"`,
       `"${g.rsvpStatus}"`,
@@ -90,7 +92,7 @@ export const GuestTracker: React.FC<GuestTrackerProps> = ({
     document.body.removeChild(link);
   };
 
-  const filteredGuests = plan.guests.filter((g) => {
+  const filteredGuests = guests.filter((g) => {
     const matchesSearch =
       g.name.toLowerCase().includes(search.toLowerCase()) ||
       g.email.toLowerCase().includes(search.toLowerCase()) ||

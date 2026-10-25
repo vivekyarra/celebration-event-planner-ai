@@ -30,6 +30,7 @@ import { useEventPersistence } from './hooks/useEventPersistence';
 import { useAnnouncer } from './hooks/useAnnouncer';
 import { EventPlan, BudgetCategory, TimelineItem, Guest, MenuItem, VendorItem } from './types';
 import { createDefaultEventPlan, calculateBudgetBreakdown } from './services/plannerGenerator';
+import { validateEventPlan } from './utils/schemaValidator';
 
 export type ActiveTab =
   | 'budget'
@@ -45,11 +46,11 @@ export const App: React.FC = () => {
   const [plan, setPlan] = useState<EventPlan>(() => {
     const saved = localStorage.getItem('celebrite_event_plan');
     if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Failed to parse saved plan, loading default', e);
+      const validation = validateEventPlan(saved);
+      if (validation.isValid && validation.sanitizedPlan) {
+        return validation.sanitizedPlan;
       }
+      console.warn('Saved plan failed schema validation or contained malicious payload, resetting to secure default:', validation.errors);
     }
     return createDefaultEventPlan();
   });

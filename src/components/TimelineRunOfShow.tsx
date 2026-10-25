@@ -9,6 +9,7 @@ import {
   User,
 } from 'lucide-react';
 import { EventPlan, TimelineItem, TimelinePhase } from '../types';
+import { useTimelineManager } from '../hooks/useTimelineManager';
 
 interface TimelineRunOfShowProps {
   plan: EventPlan;
@@ -27,31 +28,30 @@ export const TimelineRunOfShow: React.FC<TimelineRunOfShowProps> = ({
   const [phase, setPhase] = useState<TimelinePhase>('ceremony');
   const [coordinator, setCoordinator] = useState('');
 
-  const toggleComplete = (id: string) => {
-    const updated = plan.timeline.map((item) => {
-      if (item.id === id) {
-        return { ...item, isCompleted: !item.isCompleted };
-      }
-      return item;
-    });
-    onUpdateTimeline(updated);
-  };
+  // Delegated to custom timeline hook
+  const {
+    timeline,
+    addMilestone,
+    toggleComplete,
+    filterByPhase,
+    sortChronologically,
+    isSequenced,
+    sequencingWarnings,
+  } = useTimelineManager(plan.timeline, onUpdateTimeline);
 
   const handleAddMilestone = (e: React.FormEvent) => {
     e.preventDefault();
     if (!time || !title) return;
 
-    const newItem: TimelineItem = {
-      id: `timeline-${Date.now()}`,
+    addMilestone({
       time,
       title,
       description,
       phase,
       leadCoordinator: coordinator || 'Event Host',
       isCompleted: false,
-    };
+    });
 
-    onUpdateTimeline([...plan.timeline, newItem]);
     setTime('');
     setTitle('');
     setDescription('');
@@ -66,7 +66,7 @@ export const TimelineRunOfShow: React.FC<TimelineRunOfShowProps> = ({
       'VERSION:2.0',
       'PRODID:-//CelebriteAI//Event Run of Show//EN',
       'CALSCALE:GREGORIAN',
-      ...plan.timeline.map((t) => [
+      ...timeline.map((t) => [
         'BEGIN:VEVENT',
         `SUMMARY:${plan.title} - ${t.title}`,
         `DESCRIPTION:${t.description} (Coordinator: ${t.leadCoordinator})`,
@@ -88,9 +88,7 @@ export const TimelineRunOfShow: React.FC<TimelineRunOfShowProps> = ({
     document.body.removeChild(link);
   };
 
-  const filteredTimeline = selectedPhase === 'all'
-    ? plan.timeline
-    : plan.timeline.filter((item) => item.phase === selectedPhase);
+  const filteredTimeline = filterByPhase(selectedPhase as TimelinePhase | 'all');
 
   const phaseColors: Record<TimelinePhase, { bg: string; text: string }> = {
     setup: { bg: 'rgba(100, 116, 139, 0.2)', text: '#94a3b8' },
@@ -129,6 +127,37 @@ export const TimelineRunOfShow: React.FC<TimelineRunOfShowProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Sequence warning if milestones are out of chronological order */}
+      {!isSequenced && sequencingWarnings.length > 0 && (
+        <div
+          role="alert"
+          style={{
+            padding: '10px 14px',
+            marginBottom: '16px',
+            background: 'rgba(234, 179, 8, 0.12)',
+            border: '1px solid rgba(234, 179, 8, 0.35)',
+            borderRadius: 'var(--radius-sm)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            flexWrap: 'wrap',
+            fontSize: '0.82rem',
+            color: '#fbbf24',
+          }}
+        >
+          <span>⚠️ <strong>Timing Sequence Warning</strong>: {sequencingWarnings[0]}</span>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={sortChronologically}
+            style={{ fontSize: '0.75rem', padding: '3px 8px' }}
+          >
+            Auto-Sort Timeline
+          </button>
+        </div>
+      )}
 
       {/* Phase Filters */}
       <div

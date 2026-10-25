@@ -77,7 +77,7 @@ export const DietaryAuditBanner: React.FC<DietaryAuditBannerProps> = ({
           fontSize: '0.85rem',
         }}
       >
-        <CheckCircle2 size={18} style={{ flexShrink: 0 }} />
+        <CheckCircle2 size={18} style={{ flexShrink: 0 }} aria-hidden="true" />
         <span>
           <strong>Dietary Audit Passed:</strong> All registered guest dietary requirements (
           {plan.dietaryPreferences.join(', ')}) are comprehensively covered across the culinary courses.
@@ -97,7 +97,7 @@ export const DietaryAuditBanner: React.FC<DietaryAuditBannerProps> = ({
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fbbf24', fontWeight: 700, marginBottom: '8px' }}>
-        <AlertCircle size={20} />
+        <AlertCircle size={20} aria-hidden="true" />
         <span>AI Dietary Safety & Compliance Alert ({issues.length} Potential Conflict Detected)</span>
       </div>
 
@@ -131,7 +131,7 @@ export const DietaryAuditBanner: React.FC<DietaryAuditBannerProps> = ({
               onClick={() => onAddMenuItem(issue.dishToAdd)}
               style={{ fontSize: '0.78rem' }}
             >
-              <Sparkles size={14} />
+              <Sparkles size={14} aria-hidden="true" />
               <span>1-Click Auto-Resolve ({issue.dishToAdd.name.split(' ')[0]}...)</span>
             </button>
           </div>

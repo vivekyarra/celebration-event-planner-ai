@@ -1,3 +1,11 @@
+/**
+ * CelebriteAI Core Event Planner Generator Engine
+ * Algorithmic generator for event budgets, run-of-show schedules,
+ * vendor rosters, catering menus, stationery copy, and curated aesthetics.
+ *
+ * @module services/plannerGenerator
+ */
+
 import {
   BudgetCategory,
   EventPlan,
@@ -11,6 +19,21 @@ import {
   VenueType,
 } from '../types';
 
+export { queryEventCopilot, copilotRateLimiter } from './aiCopilot';
+
+/**
+ * Calculates a balanced, industry-calibrated budget breakdown tailored to specific celebration types.
+ *
+ * @param eventType Type of event (e.g. 'wedding', 'corporate', 'birthday').
+ * @param totalBudget Overall monetary budget available for the event.
+ * @returns Array of BudgetCategory objects with allocated percentages and actionable recommendations.
+ *
+ * @example
+ * ```ts
+ * const breakdown = calculateBudgetBreakdown('wedding', 30000);
+ * console.log(`Catering allocation: $${breakdown[1].allocatedAmount}`);
+ * ```
+ */
 export function calculateBudgetBreakdown(
   eventType: EventType,
   totalBudget: number
@@ -58,12 +81,12 @@ export function calculateBudgetBreakdown(
     case 'anniversary':
     default:
       ratios = [
-        { name: 'Venue & Staging', pct: 0.32, icon: 'Sparkle', recs: ['Grand ballroom', 'Dance floor installation', 'Accent uplighting'] },
-        { name: 'Catering & Wine Service', pct: 0.32, icon: 'GlassWater', recs: ['Plated 3-course dinner', 'Champagne toast', 'Late-night dessert bar'] },
-        { name: 'Live Entertainment / Band', pct: 0.16, icon: 'Music2', recs: ['Jazz trio or headline band', 'Master of Ceremonies'] },
-        { name: 'Floral & Festive Lighting', pct: 0.10, icon: 'Flower2', recs: ['Candlelit floral runners', 'Fairy light curtains'] },
-        { name: 'Photography & Memory Book', pct: 0.06, icon: 'Camera', recs: ['Photo lounge', 'Instant print keepsake book'] },
-        { name: 'Logistics Reserve', pct: 0.04, icon: 'Shield', recs: ['Transport shuttles', 'Valet tipping fund'] },
+        { name: 'Venue & Staging', pct: 0.32, icon: 'Sparkles', recs: ['Grand foyer', 'Staging & podium', 'Atmospheric lighting'] },
+        { name: 'Fine Dining & Wine Service', pct: 0.32, icon: 'Wine', recs: ['Plated 4-course banquet', 'Sommelier wine pairing', 'Late night dessert station'] },
+        { name: 'Decor, Flora & Linens', pct: 0.15, icon: 'Palette', recs: ['Fresh floral centerpieces', 'Silk table linens', 'Custom printed menus'] },
+        { name: 'Live Band & Production', pct: 0.11, icon: 'Music', recs: ['6-piece jazz ensemble', 'Wireless mics', 'Sound engineer'] },
+        { name: 'Cinematography & Memory Reel', pct: 0.06, icon: 'Film', recs: ['Highlight reel', 'Executive portrait station'] },
+        { name: 'Contingency & Hospitality', pct: 0.04, icon: 'HeartHandshake', recs: ['VIP room refreshments', 'Valet staffing buffer'] },
       ];
       break;
   }
@@ -79,6 +102,19 @@ export function calculateBudgetBreakdown(
   }));
 }
 
+/**
+ * Generates an end-to-end synchronized run-of-show schedule tailored to the event type and start time.
+ *
+ * @param eventType Celebration type governing phase sequencing.
+ * @param startTime Desired start time formatted in 24-hour HH:MM (e.g. "17:00").
+ * @returns Array of TimelineItem objects with phases, descriptions, and assigned leads.
+ *
+ * @example
+ * ```ts
+ * const runOfShow = generateRunOfShow('wedding', '16:00');
+ * console.log(`First milestone: ${runOfShow[0].title} at ${runOfShow[0].time}`);
+ * ```
+ */
 export function generateRunOfShow(
   eventType: EventType,
   startTime: string = '17:00'
@@ -127,6 +163,19 @@ export function generateRunOfShow(
   ];
 }
 
+/**
+ * Curates a cohesive aesthetic palette, lighting configuration, dress code, and musical soundtrack.
+ *
+ * @param eventType Event type classifying the design language.
+ * @param userTheme Optional bespoke prompt or override keyword (e.g. 'cyberpunk').
+ * @returns Complete ThemePalette configuration.
+ *
+ * @example
+ * ```ts
+ * const palette = generateCuratedTheme('wedding', 'bohemian rustic');
+ * console.log(`Lighting recommendation: ${palette.lightingStyle}`);
+ * ```
+ */
 export function generateCuratedTheme(
   eventType: EventType,
   userTheme?: string
@@ -138,70 +187,96 @@ export function generateCuratedTheme(
       secondary: '#a855f7',
       accent: '#f43f5e',
       background: 'linear-gradient(135deg, #090d16 0%, #1e1136 100%)',
-      vibeDescription: 'Electrifying futuristic synth-wave with neon backlights, holographic accents, and high-tech glow.',
-      lightingStyle: 'Deep violet LED floodlights with cyan beam accents and strobe laser effects.',
-      recommendedDressCode: 'Tech Chic / Dark Glitch with metallic or neon accessories.',
-      curatedMusicPlaylists: ['Synthwave Nocturne', 'Cyber Disco VIP', 'Retro Electro Lounge'],
+      vibeDescription: 'Electrifying neon hues, holographic accents, laser mapping, and futuristic synths.',
+      lightingStyle: 'Ultraviolet blacklights, dynamic LED tube batons, and cyan laser ceiling canopy',
+      recommendedDressCode: 'Futuristic Chic / Metallic accents & LED accessories',
+      curatedMusicPlaylists: ['Synthwave Dreams', 'Cyberpunk 2077 Night Mix', 'Future Electro House'],
     };
   }
 
   switch (eventType) {
     case 'wedding':
       return {
-        name: 'Ethereal Botanical Elegance',
-        primary: '#b45309',
-        secondary: '#ec4899',
+        name: 'Romantic Botanical Elegance',
+        primary: '#be185d',
+        secondary: '#f59e0b',
         accent: '#10b981',
-        background: 'linear-gradient(135deg, #fefce8 0%, #fff1f2 100%)',
-        vibeDescription: 'Romantic, timeless, and softly illuminated with lush eucalyptus florals and warm candlelight.',
-        lightingStyle: 'Warm white (2700K) hanging fairylights and ambient amber tabletop pillar candles.',
-        recommendedDressCode: 'Black-Tie Optional / Pastel Floral Cocktail.',
-        curatedMusicPlaylists: ['Acoustic Romance Classics', 'Sunset Bossa Nova & Strings', 'Golden Hour Love Anthems'],
+        background: 'linear-gradient(135deg, #1c1326 0%, #2b1834 100%)',
+        vibeDescription: 'Lush English garden florals, floating candlelight cloches, and timeless champagne accents.',
+        lightingStyle: 'Dimmable warm amber Edison filaments, pin-spots on floral centerpieces, fairy light ceiling',
+        recommendedDressCode: 'Black-Tie Optional / Floor-length gowns & sharp midnight-blue tuxedos',
+        curatedMusicPlaylists: ['Classical String Quartet arrangements of pop hits', 'Bossa Nova Sunset Lounge', 'Upbeat Brass Funk Celebration'],
       };
 
     case 'corporate':
     case 'hackathon':
       return {
-        name: 'Aurora Innovate Horizon',
+        name: 'Silicon Summit Horizon',
         primary: '#2563eb',
-        secondary: '#059669',
-        accent: '#f59e0b',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-        vibeDescription: 'Clean, inspiring, modern tech aesthetic encouraging creative breakthroughs and energetic collaboration.',
-        lightingStyle: 'Cool architectural wash lights with dynamic accent spotlights during stage talks.',
-        recommendedDressCode: 'Smart Casual / Tech Exec Modern.',
-        curatedMusicPlaylists: ['Lo-Fi Focus & Flow', 'Deep Melodic House Beats', 'Cinematic Tech Euphoria'],
+        secondary: '#06b6d4',
+        accent: '#10b981',
+        background: 'linear-gradient(135deg, #0b132b 0%, #1c2541 100%)',
+        vibeDescription: 'Sleek geometric stage portals, dynamic LED column tickers, and energetic modern innovation.',
+        lightingStyle: 'Clean cool white key-lights, energetic moving-head spot beams, illuminated branding wash',
+        recommendedDressCode: 'Business Elevated / Smart tailoring with tech-inspired sneakers',
+        curatedMusicPlaylists: ['Deep Minimal Tech Focus', 'Lo-Fi Coding Beats', 'Modern Indie Electro Uplift'],
       };
 
     case 'birthday':
     case 'milestone':
       return {
-        name: 'Golden Velvet Celebration',
-        primary: '#eab308',
-        secondary: '#f43f5e',
+        name: 'Golden Hour Sunset Glamour',
+        primary: '#f59e0b',
+        secondary: '#ec4899',
         accent: '#8b5cf6',
-        background: 'linear-gradient(135deg, #18181b 0%, #27272a 100%)',
-        vibeDescription: 'Vibrant, glamorous, high-spirited fiesta filled with shimmer, joyful toasts, and nonstop dancing.',
-        lightingStyle: 'Twinkling golden fairy curtain, warm uplighting, and mirror ball reflections.',
-        recommendedDressCode: 'Festive Cocktail with a Touch of Sparkle & Gold.',
-        curatedMusicPlaylists: ['Feel-Good Pop Anthems', 'Disco Classics & Nu-Disco', 'R&B Party Grooves'],
+        background: 'linear-gradient(135deg, #24142e 0%, #3a1c3a 100%)',
+        vibeDescription: 'Warm sunset gradients, mirrored discoball reflections, and opulent velvet lounge styling.',
+        lightingStyle: 'Warm amber uplighting, moving kaleidoscope discoballs, custom neon script monograms',
+        recommendedDressCode: 'Festive Cocktail Glam / Bold jewel tones and shimmering party silhouettes',
+        curatedMusicPlaylists: ['Nu-Disco Euphoria', 'Top 40 Remixes', 'Classic 80s & 90s Anthems'],
+      };
+
+    case 'baby_shower':
+      return {
+        name: 'Whimsical Cloud Meadow',
+        primary: '#06b6d4',
+        secondary: '#f472b6',
+        accent: '#34d399',
+        background: 'linear-gradient(135deg, #16243b 0%, #24294d 100%)',
+        vibeDescription: 'Soft pastel pampas grass clouds, macrame arches, and gentle comforting morning ambiance.',
+        lightingStyle: 'Diffused daylight mimicry, delicate fairy curtain backdrops, soft lantern glow',
+        recommendedDressCode: 'Garden Casual / Pastel linen suits, floral tea dresses, and neutral knits',
+        curatedMusicPlaylists: ['Acoustic Folk Coffeehouse', 'Gentle Indie Chillout', 'Soft Instrumental Piano'],
       };
 
     default:
       return {
-        name: 'Starlight Royale',
+        name: 'Starlight Midnight Gala',
         primary: '#6366f1',
-        secondary: '#d946ef',
-        accent: '#f97316',
-        background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
-        vibeDescription: 'Mystical starlight evening with deep navy hues, sparkling constellations, and rich velvet accents.',
-        lightingStyle: 'Starlight fiber optic ceiling wash and dim mood table lamps.',
-        recommendedDressCode: 'Cocktail / Midnight Velvet Attire.',
+        secondary: '#f59e0b',
+        accent: '#ec4899',
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e1e38 100%)',
+        vibeDescription: 'Starry night canopy, rich navy velour drapery, and polished brass sculptural pieces.',
+        lightingStyle: 'Gobo projection starry starfield, low-fog haze with violet-blue wash',
+        recommendedDressCode: 'Formal Eveningwear / Sharp dinner jackets and couture gowns',
         curatedMusicPlaylists: ['Modern Jazz standards', 'Chill Lounge Deep Grooves', 'Late-night Soul'],
       };
   }
 }
 
+/**
+ * Generates an initial roster of top-tier vendor partners with realistic costs and initial statuses.
+ *
+ * @param eventType The celebration category.
+ * @param totalBudget The overall event budget used to apportion vendor fee allocations.
+ * @returns Array of VendorItem objects.
+ *
+ * @example
+ * ```ts
+ * const vendors = generateVendors('corporate', 50000);
+ * console.log(`Lead venue partner: ${vendors[0].companyName}`);
+ * ```
+ */
 export function generateVendors(
   eventType: EventType,
   totalBudget: number
@@ -260,42 +335,62 @@ export function generateVendors(
   ];
 }
 
+/**
+ * Synthesizes realistic initial guest records populated with dietary requirements and table assignments.
+ *
+ * @param guestCount Total target attendee count.
+ * @returns Array of Guest objects ready for seating and RSVP management.
+ *
+ * @example
+ * ```ts
+ * const guests = generateInitialGuests(80);
+ * console.log(`Seeded guest count: ${guests.length}`);
+ * ```
+ */
 export function generateInitialGuests(guestCount: number): Guest[] {
   const sampleNames = [
     { name: 'Aarav Sharma', email: 'aarav.sharma@example.com', dietary: 'Vegetarian', plusOnes: 1 },
-    { name: 'Priya Patel', email: 'priya.patel@example.com', dietary: 'Vegan, Nut-Free', plusOnes: 0 },
-    { name: 'Rohan Mehta', email: 'rohan.mehta@example.com', dietary: 'Non-Vegetarian', plusOnes: 1 },
-    { name: 'Ananya Iyer', email: 'ananya.iyer@example.com', dietary: 'Gluten-Free', plusOnes: 0 },
-    { name: 'Kavita Deshmukh', email: 'kavita.d@example.com', dietary: 'Jain Vegetarian', plusOnes: 1 },
-    { name: 'Marcus Sterling', email: 'marcus.s@example.com', dietary: 'Halal', plusOnes: 0 },
-    { name: 'Chloe Dubois', email: 'chloe.dubois@example.com', dietary: 'Dairy-Free', plusOnes: 1 },
-    { name: 'Vikram Sengupta', email: 'vikram.s@example.com', dietary: 'Non-Vegetarian', plusOnes: 0 },
+    { name: 'Ananya Patel', email: 'ananya.p@example.com', dietary: 'Gluten-Free', plusOnes: 1 },
+    { name: 'Marcus Sterling', email: 'marcus.s@example.com', dietary: 'Standard', plusOnes: 0 },
+    { name: 'Elena Rostova', email: 'elena.rostova@example.com', dietary: 'Vegan', plusOnes: 1 },
+    { name: 'David Kim', email: 'david.k@example.com', dietary: 'Nut Allergy', plusOnes: 0 },
+    { name: 'Priya Iyer', email: 'priya.iyer@example.com', dietary: 'Vegetarian', plusOnes: 2 },
+    { name: 'Carlos Mendez', email: 'carlos.m@example.com', dietary: 'Standard', plusOnes: 1 },
+    { name: 'Chloe Dubois', email: 'chloe.d@example.com', dietary: 'Pescatarian', plusOnes: 0 },
+    { name: 'Liam O’Connor', email: 'liam.oc@example.com', dietary: 'Standard', plusOnes: 1 },
+    { name: 'Fatima Al-Mansoor', email: 'fatima.m@example.com', dietary: 'Halal', plusOnes: 1 },
+    { name: 'Zackary Vance', email: 'zack.v@example.com', dietary: 'Keto / Low Carb', plusOnes: 0 },
+    { name: 'Maya Lin', email: 'maya.lin@example.com', dietary: 'Vegan', plusOnes: 1 },
   ];
 
-  const countToCreate = Math.min(guestCount, 8);
-  const statuses: ('confirmed' | 'pending' | 'declined')[] = [
-    'confirmed',
-    'confirmed',
-    'confirmed',
-    'pending',
-    'pending',
-    'confirmed',
-    'pending',
-    'declined',
-  ];
+  const totalToSeed = Math.min(guestCount, 8);
+  const statuses: Guest['rsvpStatus'][] = ['confirmed', 'confirmed', 'pending', 'confirmed', 'declined', 'confirmed'];
 
-  return sampleNames.slice(0, countToCreate).map((item, idx) => ({
+  return sampleNames.slice(0, totalToSeed).map((person, idx) => ({
     id: `guest-${idx + 1}`,
-    name: item.name,
-    email: item.email,
-    dietary: item.dietary,
-    tableNumber: (idx % 3) + 1,
+    name: person.name,
+    email: person.email,
+    dietary: person.dietary,
+    tableNumber: Math.floor(idx / 4) + 1,
     rsvpStatus: statuses[idx % statuses.length],
-    plusOnes: item.plusOnes,
+    plusOnes: person.plusOnes,
     notes: idx === 0 ? 'VIP - Keynote speaker / close relative' : undefined,
   }));
 }
 
+/**
+ * Creates a curated multi-course culinary menu addressing all declared dietary restrictions.
+ *
+ * @param eventType Celebration type.
+ * @param dietary Array of active dietary restriction tags (e.g. ['Vegetarian', 'Vegan', 'Gluten-Free']).
+ * @returns Array of MenuItem objects covering starters, mains, desserts, and beverages.
+ *
+ * @example
+ * ```ts
+ * const menu = generateMenu('wedding', ['Vegetarian', 'Gluten-Free']);
+ * console.log(`First course: ${menu[0].name}`);
+ * ```
+ */
 export function generateMenu(eventType: EventType, dietary: string[]): MenuItem[] {
   const hasVegan = dietary.some((d) => d.toLowerCase().includes('vegan'));
   return [
@@ -350,6 +445,21 @@ export function generateMenu(eventType: EventType, dietary: string[]): MenuItem[
   ];
 }
 
+/**
+ * Drafts 4 distinct stylistic variations of stationery and digital invitations (Elegant, Playful, Formal, Poetic).
+ *
+ * @param title Event title.
+ * @param eventType Celebration type.
+ * @param date ISO date or formatted date of the gathering.
+ * @param venueType Type of venue setting (e.g. 'indoor', 'rooftop', 'outdoor').
+ * @returns Array of InvitationDraft objects.
+ *
+ * @example
+ * ```ts
+ * const drafts = generateInvitations('Summit 2026', 'corporate', '2026-11-20', 'indoor');
+ * console.log(`Headline: ${drafts[0].headline}`);
+ * ```
+ */
 export function generateInvitations(
   title: string,
   eventType: EventType,
@@ -388,6 +498,17 @@ export function generateInvitations(
   ];
 }
 
+/**
+ * Instantiates a rich, production-ready default EventPlan showcasing all system capabilities.
+ *
+ * @returns Fully populated EventPlan instance.
+ *
+ * @example
+ * ```ts
+ * const defaultPlan = createDefaultEventPlan();
+ * console.log(`Default event: ${defaultPlan.title}`);
+ * ```
+ */
 export function createDefaultEventPlan(): EventPlan {
   const eventType: EventType = 'wedding';
   const totalBudget = 25000;
@@ -418,147 +539,4 @@ export function createDefaultEventPlan(): EventPlan {
     invitations: generateInvitations(title, eventType, date, venueType),
     menu: generateMenu(eventType, ['Vegetarian', 'Gluten-Free', 'Vegan']),
   };
-}
-
-/**
- * Intelligent Heuristic Assistant Engine (Offline AI & Gemini Fallback)
- * Ensures 100% problem statement alignment with deep contextual advice!
- */
-export async function queryEventCopilot(
-  userQuery: string,
-  currentPlan: EventPlan,
-  apiKey?: string
-): Promise<string> {
-  const query = userQuery.toLowerCase().trim();
-
-  // If user has provided a Gemini API Key, attempt to call Gemini 1.5 Flash
-  if (apiKey && apiKey.trim().length > 10) {
-    try {
-      const prompt = `You are CelebriteAI, an expert Master Event Planner and Celebrations Concierge.
-Current Event Context:
-- Title: ${currentPlan.title}
-- Type: ${currentPlan.eventType}
-- Date: ${currentPlan.eventDate} (${currentPlan.startTime} to ${currentPlan.endTime})
-- Guests: ${currentPlan.guestCount}
-- Total Budget: ${currentPlan.currency} ${currentPlan.totalBudget.toLocaleString()}
-- Venue Type: ${currentPlan.venueType}
-- Theme: ${currentPlan.themePalette.name}
-- Dietary Tags: ${currentPlan.dietaryPreferences.join(', ')}
-
-User Question: "${userQuery}"
-
-Provide a highly actionable, structured, empathetic, and innovative response tailored specifically to this event's budget, timeline, and vibe. Use bullet points and practical tips.`;
-
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 800,
-            },
-          }),
-        }
-      );
-
-      if (res.ok) {
-        const data = await res.json();
-        const candidate = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (candidate) {
-          return candidate;
-        }
-      }
-    } catch (err) {
-      console.warn('Gemini live API call failed, falling back to heuristic engine:', err);
-    }
-  }
-
-  // Robust Contextual Heuristic AI Engine
-  if (query.includes('entertainment') || query.includes('game') || query.includes('music') || query.includes('entertain') || query.includes('activity')) {
-    return `🎉 **Entertainment & Engagement Blueprint**:
-- **Interactive Icebreaker**: Place personalized trivia cards at each dining table ("How well do you know the story?").
-- **Live Atmosphere**: Kick off cocktail hour with ${currentPlan.themePalette.curatedMusicPlaylists[0] || 'Acoustic Bossa Nova'}, then ramp up energy with ${currentPlan.themePalette.curatedMusicPlaylists[1] || 'Nu-Disco Funky Grooves'}.
-- **Memorable Highlight**: Create a 60-second synchronized toast with personalized sparklers or glow wands for an unforgettable photo climax!`;
-  }
-
-  if (query.includes('theme') || query.includes('decor') || query.includes('color') || query.includes('vibe')) {
-    return `🎨 **Theme & Styling Guide for ${currentPlan.themePalette.name}**:
-- **Palette**: Primary (${currentPlan.themePalette.primary}), Secondary (${currentPlan.themePalette.secondary}), Accent (${currentPlan.themePalette.accent}).
-- **Lighting Direction**: ${currentPlan.themePalette.lightingStyle}
-- **Vibe Suggestion**: Incorporate tactile elements like textured velvet table runners, warm amber candle cloches, and customized signature stationery.
-- **Photo Opportunity**: Create an interactive photowall with a neon monogram slogan and floral foliage to drive social media sharing.`;
-  }
-
-  if (query.includes('venue') || query.includes('location') || query.includes('site')) {
-    return `🏛️ **Venue Selection & Layout Guidance for ${currentPlan.venueType} Venue**:
-- **Capacity & Flow**: Verify comfortable circulation for ${currentPlan.guestCount} guests (minimum 15-20 sq ft per guest for dining and dancing).
-- **Load-in & Curfew Rules**: Confirm vendor setup window (ideally 3 hours before guest arrival) and municipal sound curfew.
-- **Acoustic & Power Checks**: Ensure dedicated 20-amp circuits for the sound system and food warming stations to prevent breaker trips.
-- **Accessibility Check**: Ensure barrier-free ramp access, well-lit parking, and ADA-compliant restrooms.`;
-  }
-
-  if (query.includes('speech') || query.includes('toast') || query.includes('talk') || query.includes('teleprompter')) {
-    return `🎙️ **Master Speech & Toast Delivery Blueprint**:
-- **The Golden 3-Minute Rule**: Speeches peak in emotional resonance between 2.5 and 4 minutes (approximately 350-500 words spoken at a relaxed cadence).
-- **Narrative Arc**: Start with a warm hook/greeting, share one vivid heartfelt or humorous anecdote, articulate genuine appreciation, and finish with a resounding glass-raising toast.
-- **Delivery Tip**: Maintain eye contact with the honoree for 70% of the speech, and pause for 2 full beats after punchlines for natural laughter.
-- **Microphone Etiquette**: Hold the microphone 2 inches below the chin at a 45-degree angle; do not tap or shout into the grille.`;
-  }
-
-  if (query.includes('invitation') || query.includes('invite') || query.includes('card')) {
-    return `💌 **Invitation & Stationery Strategy**:
-- **Dispatch Timeline**: Digital save-the-dates should go out 8-12 weeks in advance; formal invitations with RSVP deadlines 4-6 weeks before ${currentPlan.eventDate}.
-- **Essential Inclusions**: Clear dress code/palette inspiration (${currentPlan.themePalette.name}), parking instructions, dietary RSVP deadline, and gifting preferences.
-- **Tone Alignment**: Use CelebriteAI's 4 distinct tones—Elegant for formal galas, Playful for celebratory gatherings, Formal for executive galas, or Poetic for romantic milestone celebrations!`;
-  }
-
-  if (query.includes('vendor') || query.includes('supplier') || query.includes('photographer') || query.includes('caterer')) {
-    return `🤝 **Vendor Contracting & Negotiation Masterclass**:
-- **Package Bundling**: Negotiate bundled packages (e.g. DJ + ambient uplighting, or Lead Photographer + drone footage) to capture 10-15% margin discounts.
-- **Contract Clauses**: Always include a service replacement guarantee clause in case of primary artist illness, and define overtime rates in advance.
-- **Meals & Hospitality**: Vendor meals should be provided during guest dinner so staff are refreshed and ready for high-energy post-dinner program milestones.
-- **Payment Schedule**: Maintain standard milestones—30% deposit upon booking, 40% midway, and the final 30% after successful milestone completion.`;
-  }
-
-  if (query.includes('budget') || query.includes('cost') || query.includes('money') || query.includes('cut')) {
-    const perGuest = Math.round(currentPlan.totalBudget / (currentPlan.guestCount || 1));
-    return `💡 **Budget Optimization Strategy for ${currentPlan.title}**:
-- **Current Spend**: ${currentPlan.currency} ${currentPlan.totalBudget.toLocaleString()} (~${currentPlan.currency} ${perGuest} per guest across ${currentPlan.guestCount} attendees).
-- **Top Savings Lever**: Food & Beverage typically consumes 28-35% of total spend. Shifting from a plated sit-down dinner to elevated grazing stations or gourmet family-style platters can immediately trim 12-18% of catering labor costs.
-- **Floral & Decor Optimization**: Repurpose ceremony florals (arches & aisle arrangements) as head table centerpieces during dinner to save $600-$1,200.
-- **Vendor Negotiation Tip**: Bundle photography and drone videography with one single boutique studio for a 15% combined package discount.`;
-  }
-
-  if (query.includes('timeline') || query.includes('schedule') || query.includes('run of show') || query.includes('late')) {
-    return `⏱️ **Run-of-Show Advice for ${currentPlan.startTime} Start**:
-- **Buffer Rule**: Always include a 15-minute buffer between guest arrival and formal commencement to accommodate transit delays.
-- **Key Milestones**: Ensure all formal speeches/toasts occur *before* the main course is served while guests are seated and attentively engaged.
-- **Energy Curve**: Keep speeches under 4 minutes each. Transition to the main dance floor by ${currentPlan.timeline[currentPlan.timeline.length - 2]?.time || '9:00 PM'} right after the cake cutting.
-- **Vendor Briefing**: Schedule a 5-minute huddle with the MC and Head Waiter 30 minutes prior to doors opening.`;
-  }
-
-  if (query.includes('rsvp') || query.includes('guest') || query.includes('dietary')) {
-    const confirmedCount = currentPlan.guests.filter((g) => g.rsvpStatus === 'confirmed').length;
-    const pendingCount = currentPlan.guests.filter((g) => g.rsvpStatus === 'pending').length;
-    return `📋 **Guest & RSVP Management Summary**:
-- **RSVP Health**: ${confirmedCount} confirmed, ${pendingCount} pending confirmation out of ${currentPlan.guests.length} tracked records.
-- **Dietary Safeguards**: Detected tags: ${currentPlan.dietaryPreferences.join(', ')}. Ensure catering cards clearly label vegan, gluten-free, and nut-free items at the buffet.
-- **Follow-up Protocol**: Send a warm WhatsApp/Email reminder 14 days before ${currentPlan.eventDate} using our pre-formatted Playful or Elegant invitation copy.`;
-  }
-
-  if (query.includes('rain') || query.includes('weather') || query.includes('emergency') || query.includes('contingency')) {
-    return `☔ **Contingency & Weather Defense Plan**:
-- **Indoor Pivot**: For your ${currentPlan.venueType} setup, maintain a firm "Plan B" decision deadline 36 hours prior with the venue manager.
-- **Supply Kit**: Keep a stash of 20 clear umbrellas for photographers, extra power banks, stain remover pens, and an emergency sewing/first-aid kit in the coordinator suite.
-- **Temperature Control**: For outdoor evenings, rent standing patio infrared heaters or offer customized lightweight pashminas/blankets as guest keepsakes.`;
-  }
-
-  return `✨ **CelebriteAI Recommendation for "${userQuery}"**:
-Based on your **${currentPlan.title}** (${currentPlan.guestCount} guests, budget ${currentPlan.currency} ${currentPlan.totalBudget.toLocaleString()}):
-1. **Focus on Guest Experience**: Small touches like signature welcome drinks and handwritten welcome notes create a 10x greater memory than expensive single-use props.
-2. **Synchronize Vendors**: Share our PDF/Printable Event Run of Show with your Photographer, DJ, and Caterer at least 5 days prior to align cue points.
-3. **Explore Modules**: You can adjust your budget allocations dynamically in the Budget tab, add custom Run-of-Show timeline markers in the Timeline tab, or track dietary RSVPs in the Guests tab!`;
 }

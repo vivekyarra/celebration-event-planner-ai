@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Sparkles, Wand2, Calendar, DollarSign, Users, MapPin } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Sparkles, Wand2 } from 'lucide-react';
 import { EventPlan, EventType, VenueType } from '../types';
 import {
   calculateBudgetBreakdown,
@@ -17,6 +17,12 @@ interface EventWizardModalProps {
   onPlanCreated: (plan: EventPlan) => void;
 }
 
+interface FieldErrors {
+  title?: string;
+  guestCount?: string;
+  totalBudget?: string;
+}
+
 export const EventWizardModal: React.FC<EventWizardModalProps> = ({
   isOpen,
   onClose,
@@ -29,15 +35,71 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
   const [endTime, setEndTime] = useState('23:30');
   const [guestCount, setGuestCount] = useState(60);
   const [totalBudget, setTotalBudget] = useState(8500);
-  const [currency, setCurrency] = useState('USD');
+  const [currency] = useState('USD');
   const [venueType, setVenueType] = useState<VenueType>('indoor');
   const [themeVibe, setThemeVibe] = useState('Golden Velvet Celebration');
   const [dietaryInput, setDietaryInput] = useState('Vegetarian, Gluten-Free, Vegan Friendly');
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  const modalRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus trap inside the modal dialog
+  useEffect(() => {
+    if (!isOpen) return;
+    const modalEl = modalRef.current;
+    if (!modalEl) return;
+
+    // Focus initial input
+    setTimeout(() => {
+      titleInputRef.current?.focus();
+    }, 50);
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+
+      const focusable = modalEl.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+
+      const firstEl = focusable[0];
+      const lastEl = focusable[focusable.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstEl) {
+          e.preventDefault();
+          lastEl.focus();
+        }
+      } else {
+        if (document.activeElement === lastEl) {
+          e.preventDefault();
+          firstEl.focus();
+        }
+      }
+    };
+
+    modalEl.addEventListener('keydown', handleTabKey);
+    return () => modalEl.removeEventListener('keydown', handleTabKey);
+  }, [isOpen]);
+
+  // Escape key listener to close modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   const loadPreset = (presetName: string) => {
+    setFieldErrors({});
     setValidationErrors([]);
     switch (presetName) {
       case 'wedding':
@@ -98,20 +160,31 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
     e.preventDefault();
 
     const errs: string[] = [];
+    const fErrs: FieldErrors = {};
+
     if (!title.trim()) {
-      errs.push('Celebration / Event Name is required.');
+      const msg = 'Celebration / Event Name is required.';
+      errs.push(msg);
+      fErrs.title = msg;
     }
     if (guestCount < 5 || guestCount > 5000) {
-      errs.push('Target guests must be between 5 and 5,000 attendees.');
+      const msg = 'Target guests must be between 5 and 5,000 attendees.';
+      errs.push(msg);
+      fErrs.guestCount = msg;
     }
     if (totalBudget < 100 || totalBudget > 10000000) {
-      errs.push('Total budget must be between 100 and 10,000,000.');
+      const msg = 'Total budget must be between 100 and 10,000,000.';
+      errs.push(msg);
+      fErrs.totalBudget = msg;
     }
 
     if (errs.length > 0) {
+      setFieldErrors(fErrs);
       setValidationErrors(errs);
       return;
     }
+
+    setFieldErrors({});
     setValidationErrors([]);
 
     const dietList = dietaryInput.split(',').map((s) => s.trim()).filter(Boolean);
@@ -143,12 +216,23 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
   };
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="wizard-title">
+    <div
+      className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="wizard-title"
+      ref={modalRef}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <div className="modal-content" style={{ maxWidth: '620px' }}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div className="brand-logo" style={{ width: '36px', height: '36px' }}>
-              <Wand2 size={20} />
+              <Wand2 size={20} aria-hidden="true" />
             </div>
             <div>
               <h2 id="wizard-title" style={{ fontSize: '1.25rem', fontWeight: 700 }}>
@@ -159,14 +243,26 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
               </p>
             </div>
           </div>
-          <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Close modal">
-            <X size={20} />
+          <button
+            type="button"
+            className="modal-close-btn"
+            onClick={onClose}
+            aria-label="Close modal"
+          >
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
         {/* Quick Presets */}
         <div style={{ marginBottom: '20px' }}>
-          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+          <span
+            style={{
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              color: 'var(--text-muted)',
+              textTransform: 'uppercase',
+            }}
+          >
             Instant Celebration Presets:
           </span>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
@@ -233,18 +329,51 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
               Celebration / Event Name
             </label>
             <input
+              ref={titleInputRef}
               id="w-title"
               type="text"
               className="form-input"
               required
-              aria-describedby="w-title-help"
+              aria-describedby={
+                fieldErrors.title ? 'w-title-error w-title-help' : 'w-title-help'
+              }
+              aria-invalid={Boolean(fieldErrors.title)}
+              aria-errormessage={fieldErrors.title ? 'w-title-error' : undefined}
               value={title}
               onChange={(e) => {
                 setTitle(e.target.value);
-                if (validationErrors.length > 0) setValidationErrors([]);
+                if (fieldErrors.title) {
+                  setFieldErrors((prev) => ({ ...prev, title: undefined }));
+                  setValidationErrors((prev) =>
+                    prev.filter((err) => !err.includes('Celebration / Event Name'))
+                  );
+                }
               }}
             />
-            <span id="w-title-help" style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
+            {fieldErrors.title && (
+              <span
+                id="w-title-error"
+                className="field-error-message"
+                style={{
+                  fontSize: '0.75rem',
+                  color: '#f87171',
+                  marginTop: '4px',
+                  display: 'block',
+                  fontWeight: 600,
+                }}
+              >
+                {fieldErrors.title}
+              </span>
+            )}
+            <span
+              id="w-title-help"
+              style={{
+                fontSize: '0.72rem',
+                color: 'var(--text-dim)',
+                marginTop: '4px',
+                display: 'block',
+              }}
+            >
               Give your celebration a memorable, recognizable name
             </span>
           </div>
@@ -332,14 +461,46 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
                 max="5000"
                 className="form-input"
                 required
-                aria-describedby="w-guests-help"
+                aria-describedby={
+                  fieldErrors.guestCount ? 'w-guests-error w-guests-help' : 'w-guests-help'
+                }
+                aria-invalid={Boolean(fieldErrors.guestCount)}
+                aria-errormessage={fieldErrors.guestCount ? 'w-guests-error' : undefined}
                 value={guestCount}
                 onChange={(e) => {
                   setGuestCount(parseInt(e.target.value, 10) || 0);
-                  if (validationErrors.length > 0) setValidationErrors([]);
+                  if (fieldErrors.guestCount) {
+                    setFieldErrors((prev) => ({ ...prev, guestCount: undefined }));
+                    setValidationErrors((prev) =>
+                      prev.filter((err) => !err.includes('Target guests'))
+                    );
+                  }
                 }}
               />
-              <span id="w-guests-help" style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
+              {fieldErrors.guestCount && (
+                <span
+                  id="w-guests-error"
+                  className="field-error-message"
+                  style={{
+                    fontSize: '0.75rem',
+                    color: '#f87171',
+                    marginTop: '4px',
+                    display: 'block',
+                    fontWeight: 600,
+                  }}
+                >
+                  {fieldErrors.guestCount}
+                </span>
+              )}
+              <span
+                id="w-guests-help"
+                style={{
+                  fontSize: '0.72rem',
+                  color: 'var(--text-dim)',
+                  marginTop: '4px',
+                  display: 'block',
+                }}
+              >
                 Must be between 5 and 5,000 guests
               </span>
             </div>
@@ -356,14 +517,46 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
                 step="50"
                 className="form-input"
                 required
-                aria-describedby="w-budget-help"
+                aria-describedby={
+                  fieldErrors.totalBudget ? 'w-budget-error w-budget-help' : 'w-budget-help'
+                }
+                aria-invalid={Boolean(fieldErrors.totalBudget)}
+                aria-errormessage={fieldErrors.totalBudget ? 'w-budget-error' : undefined}
                 value={totalBudget}
                 onChange={(e) => {
                   setTotalBudget(parseFloat(e.target.value) || 0);
-                  if (validationErrors.length > 0) setValidationErrors([]);
+                  if (fieldErrors.totalBudget) {
+                    setFieldErrors((prev) => ({ ...prev, totalBudget: undefined }));
+                    setValidationErrors((prev) =>
+                      prev.filter((err) => !err.includes('Total budget'))
+                    );
+                  }
                 }}
               />
-              <span id="w-budget-help" style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
+              {fieldErrors.totalBudget && (
+                <span
+                  id="w-budget-error"
+                  className="field-error-message"
+                  style={{
+                    fontSize: '0.75rem',
+                    color: '#f87171',
+                    marginTop: '4px',
+                    display: 'block',
+                    fontWeight: 600,
+                  }}
+                >
+                  {fieldErrors.totalBudget}
+                </span>
+              )}
+              <span
+                id="w-budget-help"
+                style={{
+                  fontSize: '0.72rem',
+                  color: 'var(--text-dim)',
+                  marginTop: '4px',
+                  display: 'block',
+                }}
+              >
                 Must be between 100 and 10,000,000
               </span>
             </div>
@@ -382,12 +575,19 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '10px',
+              marginTop: '24px',
+            }}
+          >
             <button type="button" className="btn btn-secondary" onClick={onClose}>
               Cancel
             </button>
             <button type="submit" className="btn btn-primary" style={{ padding: '10px 20px' }}>
-              <Sparkles size={16} />
+              <Sparkles size={16} aria-hidden="true" />
               <span>Generate AI Event Plan</span>
             </button>
           </div>

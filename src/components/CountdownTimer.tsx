@@ -114,14 +114,14 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
             alignItems: 'center',
           }}
         >
-          {timeLeft.isPast ? <CheckCircle size={18} /> : <Clock size={18} />}
+          {timeLeft.isPast ? <CheckCircle size={18} aria-hidden="true" /> : <Clock size={18} aria-hidden="true" />}
         </div>
         <div>
           <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {timeLeft.isPast ? 'Event Status' : timeLeft.isToday ? 'Happening Today!' : 'Countdown to Showtime'}
           </div>
           <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Calendar size={13} color="#a5b4fc" />
+            <Calendar size={13} color="#a5b4fc" aria-hidden="true" />
             <span>{eventDate} at {startTime}</span>
           </div>
         </div>
@@ -142,7 +142,7 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
             border: '1px solid rgba(16, 185, 129, 0.3)',
           }}
         >
-          <Sparkles size={14} />
+          <Sparkles size={14} aria-hidden="true" />
           <span>Celebration Concluded & Archived</span>
         </div>
       ) : (
