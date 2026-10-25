@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { UtensilsCrossed, Plus, Sparkles } from 'lucide-react';
 import { EventPlan, MenuItem } from '../types';
 import { DietaryAuditBanner } from './DietaryAuditBanner';
-import { validateNumericRange, sanitizeHtml } from '../services/security';
+import { validateNumericRange } from '../services/security';
+import { useMenuManager } from '../hooks/useMenuManager';
 
 interface CateringMenuProps {
   plan: EventPlan;
@@ -13,6 +14,12 @@ export const CateringMenu: React.FC<CateringMenuProps> = ({
   plan,
   onUpdateMenu,
 }) => {
+  const {
+    menu,
+    addDish,
+    getItemsByCourseAndDietary,
+  } = useMenuManager(plan.menu, onUpdateMenu);
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDietaryFilter, setSelectedDietaryFilter] = useState<string>('All');
   const [name, setName] = useState('');
@@ -47,17 +54,16 @@ export const CateringMenu: React.FC<CateringMenuProps> = ({
       return;
     }
 
-    const newDish: MenuItem = {
+    addDish({
       id: `dish-${Date.now()}`,
-      name: sanitizeHtml(name.trim()),
-      description: sanitizeHtml(description.trim()),
+      name: name.trim(),
+      description: description.trim(),
       course,
-      dietaryTags: tagInput.split(',').map((t) => sanitizeHtml(t.trim())).filter(Boolean),
-      recommendedQuantity: sanitizeHtml(portion.trim()),
+      dietaryTags: tagInput.split(',').map((t) => t.trim()).filter(Boolean),
+      recommendedQuantity: portion.trim(),
       estimatedCost: numCost,
-    };
+    });
 
-    onUpdateMenu([...plan.menu, newDish]);
     setName('');
     setDescription('');
     setCostInput('25');
@@ -99,8 +105,8 @@ export const CateringMenu: React.FC<CateringMenuProps> = ({
       {/* Embedded Dietary Audit for contextual awareness */}
       <div style={{ marginBottom: '20px' }}>
         <DietaryAuditBanner
-          plan={plan}
-          onAddMenuItem={(dish) => onUpdateMenu([...plan.menu, dish])}
+          plan={{ ...plan, menu }}
+          onAddMenuItem={(dish) => addDish(dish)}
         />
       </div>
 
@@ -140,14 +146,7 @@ export const CateringMenu: React.FC<CateringMenuProps> = ({
       {/* Courses display */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {courses.map((c) => {
-          const items = plan.menu
-            .filter((m) => m.course === c)
-            .filter((m) => {
-              if (selectedDietaryFilter === 'All') return true;
-              return m.dietaryTags.some(
-                (t) => t.toLowerCase() === selectedDietaryFilter.toLowerCase()
-              );
-            });
+          const items = getItemsByCourseAndDietary(c, selectedDietaryFilter);
 
           if (items.length === 0) return null;
 

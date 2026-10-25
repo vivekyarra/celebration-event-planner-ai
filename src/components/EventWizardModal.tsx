@@ -1,15 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X, Sparkles, Wand2 } from 'lucide-react';
 import { EventPlan, EventType, VenueType } from '../types';
-import {
-  calculateBudgetBreakdown,
-  generateCuratedTheme,
-  generateInitialGuests,
-  generateInvitations,
-  generateMenu,
-  generateRunOfShow,
-  generateVendors,
-} from '../services/plannerGenerator';
+import { useEventWizard } from '../hooks/useEventWizard';
 
 interface EventWizardModalProps {
   isOpen: boolean;
@@ -17,30 +9,32 @@ interface EventWizardModalProps {
   onPlanCreated: (plan: EventPlan) => void;
 }
 
-interface FieldErrors {
-  title?: string;
-  guestCount?: string;
-  totalBudget?: string;
-}
-
 export const EventWizardModal: React.FC<EventWizardModalProps> = ({
   isOpen,
   onClose,
   onPlanCreated,
 }) => {
-  const [eventType, setEventType] = useState<EventType>('birthday');
-  const [title, setTitle] = useState('30th Milestone Golden Birthday');
-  const [date, setDate] = useState('2026-11-20');
-  const [startTime, setStartTime] = useState('18:00');
-  const [endTime, setEndTime] = useState('23:30');
-  const [guestCount, setGuestCount] = useState(60);
-  const [totalBudget, setTotalBudget] = useState(8500);
-  const [currency] = useState('USD');
-  const [venueType, setVenueType] = useState<VenueType>('indoor');
-  const [themeVibe, setThemeVibe] = useState('Golden Velvet Celebration');
-  const [dietaryInput, setDietaryInput] = useState('Vegetarian, Gluten-Free, Vegan Friendly');
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const {
+    title,
+    eventType,
+    venueType,
+    date,
+    startTime,
+    guestCount,
+    totalBudget,
+    currency,
+    dietaryTags,
+    fieldErrors,
+    validationErrors,
+    handleFieldChange,
+    handleSubmit,
+    loadPreset,
+  } = useEventWizard({
+    onPlanCreated: (plan) => {
+      onPlanCreated(plan);
+      onClose();
+    },
+  });
 
   const modalRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -97,123 +91,6 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
-
-  const loadPreset = (presetName: string) => {
-    setFieldErrors({});
-    setValidationErrors([]);
-    switch (presetName) {
-      case 'wedding':
-        setEventType('wedding');
-        setTitle('Aarav & Ananya’s Royal Wedding');
-        setDate('2026-12-18');
-        setStartTime('16:00');
-        setEndTime('23:30');
-        setGuestCount(150);
-        setTotalBudget(30000);
-        setVenueType('indoor');
-        setThemeVibe('Ethereal Botanical Elegance');
-        setDietaryInput('Vegetarian, Gluten-Free, Vegan, Nut-Free');
-        break;
-
-      case 'hackathon':
-        setEventType('hackathon');
-        setTitle('NextGen AI 24H Global Hackathon');
-        setDate('2026-11-15');
-        setStartTime('09:00');
-        setEndTime('21:00');
-        setGuestCount(120);
-        setTotalBudget(15000);
-        setVenueType('indoor');
-        setThemeVibe('Neon Cyberpunk Gala');
-        setDietaryInput('Vegan, High-Protein, Caffeine Station, Halal');
-        break;
-
-      case 'birthday':
-        setEventType('birthday');
-        setTitle('Maya’s Retro Neon 30th Birthday');
-        setDate('2026-11-28');
-        setStartTime('19:00');
-        setEndTime('01:00');
-        setGuestCount(50);
-        setTotalBudget(6000);
-        setVenueType('rooftop');
-        setThemeVibe('Golden Velvet Celebration');
-        setDietaryInput('Vegetarian, Dairy-Free');
-        break;
-
-      case 'corporate':
-        setEventType('corporate');
-        setTitle('Annual Global Innovation Summit & Gala');
-        setDate('2026-12-05');
-        setStartTime('14:00');
-        setEndTime('22:00');
-        setGuestCount(200);
-        setTotalBudget(45000);
-        setVenueType('hybrid');
-        setThemeVibe('Aurora Innovate Horizon');
-        setDietaryInput('Gluten-Free, Halal, Jain Vegetarian, Vegan');
-        break;
-    }
-  };
-
-  const handleGenerate = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const errs: string[] = [];
-    const fErrs: FieldErrors = {};
-
-    if (!title.trim()) {
-      const msg = 'Celebration / Event Name is required.';
-      errs.push(msg);
-      fErrs.title = msg;
-    }
-    if (guestCount < 5 || guestCount > 5000) {
-      const msg = 'Target guests must be between 5 and 5,000 attendees.';
-      errs.push(msg);
-      fErrs.guestCount = msg;
-    }
-    if (totalBudget < 100 || totalBudget > 10000000) {
-      const msg = 'Total budget must be between 100 and 10,000,000.';
-      errs.push(msg);
-      fErrs.totalBudget = msg;
-    }
-
-    if (errs.length > 0) {
-      setFieldErrors(fErrs);
-      setValidationErrors(errs);
-      return;
-    }
-
-    setFieldErrors({});
-    setValidationErrors([]);
-
-    const dietList = dietaryInput.split(',').map((s) => s.trim()).filter(Boolean);
-    const newPlan: EventPlan = {
-      id: `event-${Date.now()}`,
-      title,
-      eventType,
-      eventDate: date,
-      startTime,
-      endTime,
-      guestCount,
-      totalBudget,
-      currency,
-      venueType,
-      theme: themeVibe,
-      dietaryPreferences: dietList,
-      specialRequests: '',
-      budgetBreakdown: calculateBudgetBreakdown(eventType, totalBudget),
-      timeline: generateRunOfShow(eventType, startTime),
-      vendors: generateVendors(eventType, totalBudget),
-      guests: generateInitialGuests(guestCount),
-      themePalette: generateCuratedTheme(eventType, themeVibe),
-      invitations: generateInvitations(title, eventType, date, venueType),
-      menu: generateMenu(eventType, dietList),
-    };
-
-    onPlanCreated(newPlan);
-    onClose();
-  };
 
   return (
     <div
@@ -297,7 +174,7 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
           </div>
         </div>
 
-        <form onSubmit={handleGenerate} noValidate>
+        <form onSubmit={handleSubmit} noValidate>
           {validationErrors.length > 0 && (
             <div
               role="alert"
@@ -340,15 +217,7 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
               aria-invalid={Boolean(fieldErrors.title)}
               aria-errormessage={fieldErrors.title ? 'w-title-error' : undefined}
               value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                if (fieldErrors.title) {
-                  setFieldErrors((prev) => ({ ...prev, title: undefined }));
-                  setValidationErrors((prev) =>
-                    prev.filter((err) => !err.includes('Celebration / Event Name'))
-                  );
-                }
-              }}
+              onChange={(e) => handleFieldChange('title', e.target.value)}
             />
             {fieldErrors.title && (
               <span
@@ -387,7 +256,7 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
                 id="w-type"
                 className="form-select"
                 value={eventType}
-                onChange={(e) => setEventType(e.target.value as EventType)}
+                onChange={(e) => handleFieldChange('eventType', e.target.value as EventType)}
               >
                 <option value="birthday">Birthday Party</option>
                 <option value="wedding">Wedding & Reception</option>
@@ -408,7 +277,7 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
                 id="w-venue"
                 className="form-select"
                 value={venueType}
-                onChange={(e) => setVenueType(e.target.value as VenueType)}
+                onChange={(e) => handleFieldChange('venueType', e.target.value as VenueType)}
               >
                 <option value="indoor">Indoor Banquet / Ballroom</option>
                 <option value="outdoor">Outdoor Garden / Lawn</option>
@@ -431,7 +300,7 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
                 className="form-input"
                 required
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
+                onChange={(e) => handleFieldChange('date', e.target.value)}
               />
             </div>
 
@@ -444,7 +313,7 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
                 type="text"
                 className="form-input"
                 value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
+                onChange={(e) => handleFieldChange('startTime', e.target.value)}
               />
             </div>
           </div>
@@ -467,15 +336,9 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
                 aria-invalid={Boolean(fieldErrors.guestCount)}
                 aria-errormessage={fieldErrors.guestCount ? 'w-guests-error' : undefined}
                 value={guestCount}
-                onChange={(e) => {
-                  setGuestCount(parseInt(e.target.value, 10) || 0);
-                  if (fieldErrors.guestCount) {
-                    setFieldErrors((prev) => ({ ...prev, guestCount: undefined }));
-                    setValidationErrors((prev) =>
-                      prev.filter((err) => !err.includes('Target guests'))
-                    );
-                  }
-                }}
+                onChange={(e) =>
+                  handleFieldChange('guestCount', parseInt(e.target.value, 10) || 0)
+                }
               />
               {fieldErrors.guestCount && (
                 <span
@@ -523,15 +386,9 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
                 aria-invalid={Boolean(fieldErrors.totalBudget)}
                 aria-errormessage={fieldErrors.totalBudget ? 'w-budget-error' : undefined}
                 value={totalBudget}
-                onChange={(e) => {
-                  setTotalBudget(parseFloat(e.target.value) || 0);
-                  if (fieldErrors.totalBudget) {
-                    setFieldErrors((prev) => ({ ...prev, totalBudget: undefined }));
-                    setValidationErrors((prev) =>
-                      prev.filter((err) => !err.includes('Total budget'))
-                    );
-                  }
-                }}
+                onChange={(e) =>
+                  handleFieldChange('totalBudget', parseFloat(e.target.value) || 0)
+                }
               />
               {fieldErrors.totalBudget && (
                 <span
@@ -570,8 +427,8 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
               id="w-diet"
               type="text"
               className="form-input"
-              value={dietaryInput}
-              onChange={(e) => setDietaryInput(e.target.value)}
+              value={dietaryTags}
+              onChange={(e) => handleFieldChange('dietaryTags', e.target.value)}
             />
           </div>
 
