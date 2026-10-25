@@ -185,7 +185,7 @@ export const CateringMenu: React.FC<CateringMenuProps> = ({
                     id="dish-course"
                     className="form-select"
                     value={course}
-                    onChange={(e) => setCourse(e.target.value as any)}
+                    onChange={(e) => setCourse(e.target.value as 'starters' | 'mains' | 'desserts' | 'beverages')}
                   >
                     <option value="starters">Starters</option>
                     <option value="mains">Mains</option>

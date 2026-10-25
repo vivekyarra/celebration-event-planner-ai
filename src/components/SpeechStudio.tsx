@@ -143,7 +143,7 @@ To ${honoree}: May your journey continue to be blessed with abundance, laughter,
             id="speech-tone"
             className="form-select"
             value={tone}
-            onChange={(e) => setTone(e.target.value as any)}
+            onChange={(e) => setTone(e.target.value as 'humorous' | 'emotional' | 'motivational' | 'poetic')}
           >
             <option value="humorous">😄 Witty & Humorous</option>
             <option value="emotional">❤️ Heartfelt & Emotional</option>
