@@ -317,3 +317,15 @@ export function createRateLimiter(
 ): RateLimiter {
   return new RateLimiter(maxTokens, refillRateMs);
 }
+
+export {
+  HEX_COLOR_REGEX,
+  isValidHexColor,
+  calculateRelativeLuminance,
+  calculateContrastRatio,
+  isWcagCompliant,
+  sanitizeUrl,
+  isSafeUrl,
+  getAccessibleName,
+  exportPlanToJson,
+} from '../services/security';

@@ -102,7 +102,7 @@ export class ClientRateLimiter {
    * ```
    */
   public tryConsume(tokens: number = 1): boolean {
-    if (tokens <= 0) return true;
+    if (tokens <= 0) return false;
     this.refill();
 
     if (this.tokens >= tokens) {
@@ -337,4 +337,200 @@ export function validateEmail(email: string): boolean {
 export function maskApiKey(apiKey: string): string {
   if (!apiKey || typeof apiKey !== 'string' || apiKey.length < 8) return '';
   return `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
+}
+
+/**
+ * Strict 6-character hexadecimal color regex (#RRGGBB).
+ */
+export const HEX_COLOR_REGEX = /^#[0-9a-fA-F]{6}$/;
+
+/**
+ * Validates that an input is a valid 6-character hexadecimal color string.
+ */
+export function isValidHexColor(hex: unknown): boolean {
+  return typeof hex === 'string' && HEX_COLOR_REGEX.test(hex.trim());
+}
+
+/**
+ * Calculates WCAG 2.1 relative luminance for an sRGB hex color.
+ * Returns a value between 0.0 (darkest black) and 1.0 (lightest white).
+ */
+export function calculateRelativeLuminance(hex: string): number {
+  if (!isValidHexColor(hex)) {
+    throw new Error(`Invalid hex color for luminance calculation: "${hex}". Must match #RRGGBB.`);
+  }
+
+  const clean = hex.trim().slice(1);
+  const r = parseInt(clean.substring(0, 2), 16) / 255;
+  const g = parseInt(clean.substring(2, 4), 16) / 255;
+  const b = parseInt(clean.substring(4, 6), 16) / 255;
+
+  const toLinear = (c: number): number => {
+    return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+
+  const rLinear = toLinear(r);
+  const gLinear = toLinear(g);
+  const bLinear = toLinear(b);
+
+  return 0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear;
+}
+
+/**
+ * Calculates WCAG 2.1 contrast ratio between two hex colors.
+ * Returns a value between 1.0 and 21.0.
+ */
+export function calculateContrastRatio(hex1: string, hex2: string): number {
+  const lum1 = calculateRelativeLuminance(hex1);
+  const lum2 = calculateRelativeLuminance(hex2);
+
+  const l1 = Math.max(lum1, lum2);
+  const l2 = Math.min(lum1, lum2);
+
+  const ratio = (l1 + 0.05) / (l2 + 0.05);
+  return Math.round(ratio * 100) / 100;
+}
+
+/**
+ * Verifies whether two colors meet WCAG 2.1 AA or AAA contrast guidelines.
+ */
+export function isWcagCompliant(
+  foregroundHex: string,
+  backgroundHex: string,
+  level: 'AA' | 'AAA' = 'AA',
+  isLargeText: boolean = false
+): boolean {
+  const ratio = calculateContrastRatio(foregroundHex, backgroundHex);
+  if (level === 'AAA') {
+    return isLargeText ? ratio >= 4.5 : ratio >= 7.0;
+  }
+  // Level AA
+  return isLargeText ? ratio >= 3.0 : ratio >= 4.5;
+}
+
+/**
+ * Sanitizes URLs to prevent javascript: and dangerous script protocol attacks.
+ */
+export function sanitizeUrl(url: string): string {
+  if (!url || typeof url !== 'string') return 'about:blank';
+  const trimmed = url.trim();
+  const sanitized = trimmed.replace(/[\u0000-\u001F\u007F-\u009F\s]/g, '');
+
+  if (/^(?:javascript|vbscript|data):/i.test(sanitized)) {
+    return 'about:blank';
+  }
+  return trimmed;
+}
+
+/**
+ * Verifies whether a given URL is safe against protocol-based XSS attacks.
+ */
+export function isSafeUrl(url: string): boolean {
+  if (!url || typeof url !== 'string') return false;
+  const sanitized = url.trim().replace(/[\u0000-\u001F\u007F-\u009F\s]/g, '');
+  return !/^(?:javascript|vbscript|data):/i.test(sanitized);
+}
+
+/**
+ * Computes the accessible name of an element according to W3C Accessible Name Computation.
+ */
+export function getAccessibleName(element: HTMLElement | null): string {
+  if (!element) return '';
+
+  const ariaLabel = element.getAttribute('aria-label');
+  if (ariaLabel && ariaLabel.trim()) {
+    return ariaLabel.trim();
+  }
+
+  const labelledBy = element.getAttribute('aria-labelledby');
+  if (labelledBy) {
+    const ids = labelledBy.split(/\s+/).filter(Boolean);
+    const parts = ids
+      .map((id) => document.getElementById(id)?.textContent?.trim() || '')
+      .filter(Boolean);
+    if (parts.length > 0) {
+      return parts.join(' ');
+    }
+  }
+
+  if (
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement ||
+    element instanceof HTMLSelectElement
+  ) {
+    if (element.labels && element.labels.length > 0) {
+      const labels = Array.from(element.labels)
+        .map((l) => l.textContent?.trim() || '')
+        .filter(Boolean);
+      if (labels.length > 0) return labels.join(' ');
+    }
+    const placeholder = element.getAttribute('placeholder');
+    if (placeholder && placeholder.trim()) return placeholder.trim();
+  }
+
+  const text = element.textContent?.trim();
+  if (text) return text;
+
+  const title = element.getAttribute('title');
+  if (title && title.trim()) return title.trim();
+
+  return '';
+}
+
+/**
+ * Strips dangerous prototype keys and masks sensitive tokens before exporting JSON.
+ */
+export function exportPlanToJson(plan: unknown, customSensitiveKeys: string[] = []): string {
+  if (!plan || typeof plan !== 'object') {
+    throw new Error('Export payload must be a non-null object.');
+  }
+
+  const sensitiveKeyPatterns = [
+    'apikey',
+    'api_key',
+    'secret',
+    'token',
+    'password',
+    'privatekey',
+    ...customSensitiveKeys.map((k) => k.toLowerCase()),
+  ];
+
+  const sanitizeNode = (node: unknown): unknown => {
+    if (node === null || typeof node !== 'object') {
+      if (typeof node === 'string') {
+        if (/^AIzaSy[A-Za-z0-9_-]{33}$/.test(node)) {
+          return maskApiKey(node);
+        }
+      }
+      return node;
+    }
+
+    if (Array.isArray(node)) {
+      return node.map((item) => sanitizeNode(item));
+    }
+
+    const clean: Record<string, unknown> = {};
+    const dangerousKeys = new Set(['__proto__', 'constructor', 'prototype']);
+
+    for (const key of Object.keys(node as Record<string, unknown>)) {
+      if (dangerousKeys.has(key)) {
+        continue;
+      }
+
+      const lowerKey = key.toLowerCase();
+      const isSensitive = sensitiveKeyPatterns.some((pattern) => lowerKey.includes(pattern));
+
+      const val = (node as Record<string, unknown>)[key];
+      if (isSensitive && typeof val === 'string' && val.length > 0) {
+        clean[key] = maskApiKey(val);
+      } else {
+        clean[key] = sanitizeNode(val);
+      }
+    }
+
+    return clean;
+  };
+
+  const safeObject = sanitizeNode(plan);
+  return JSON.stringify(safeObject, null, 2);
 }

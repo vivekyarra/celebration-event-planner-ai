@@ -10,12 +10,12 @@ export function useSpeech() {
     }
   }, []);
 
-  const speak = useCallback((text: string) => {
+  const speak = useCallback((text: string, rate: number = 1.0) => {
     if (!isSupported) return;
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0;
+    utterance.rate = rate;
     utterance.pitch = 1.0;
 
     utterance.onstart = () => setIsSpeaking(true);

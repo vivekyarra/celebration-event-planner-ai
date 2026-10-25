@@ -61,9 +61,13 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ plan }) => {
         </div>
       </div>
 
-      <div className="stat-pills-grid">
-        <div className="stat-pill">
-          <div className="stat-pill-icon" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>
+      <div className="stat-pills-grid" role="region" aria-label="Key Performance Indicators">
+        <div
+          className="stat-pill"
+          role="group"
+          aria-label={`Total Budget: ${plan.currency} ${plan.totalBudget.toLocaleString()}`}
+        >
+          <div className="stat-pill-icon" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }} aria-hidden="true">
             <DollarSign size={20} />
           </div>
           <div>
@@ -74,8 +78,12 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ plan }) => {
           </div>
         </div>
 
-        <div className="stat-pill">
-          <div className="stat-pill-icon" style={{ background: 'rgba(236, 72, 153, 0.15)', color: '#f472b6' }}>
+        <div
+          className="stat-pill"
+          role="group"
+          aria-label={`Target Guests: ${plan.guestCount} Guests`}
+        >
+          <div className="stat-pill-icon" style={{ background: 'rgba(236, 72, 153, 0.15)', color: '#f472b6' }} aria-hidden="true">
             <Users size={20} />
           </div>
           <div>
@@ -84,8 +92,12 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ plan }) => {
           </div>
         </div>
 
-        <div className="stat-pill">
-          <div className="stat-pill-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
+        <div
+          className="stat-pill"
+          role="group"
+          aria-label={`Confirmed RSVPs: ${confirmedGuests} of ${plan.guests.length}`}
+        >
+          <div className="stat-pill-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }} aria-hidden="true">
             <CheckCircle2 size={20} />
           </div>
           <div>
@@ -96,8 +108,12 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ plan }) => {
           </div>
         </div>
 
-        <div className="stat-pill">
-          <div className="stat-pill-icon" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
+        <div
+          className="stat-pill"
+          role="group"
+          aria-label={`Unit Economics: ${plan.currency} ${costPerGuest} per guest`}
+        >
+          <div className="stat-pill-icon" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }} aria-hidden="true">
             <PieChart size={20} />
           </div>
           <div>
@@ -108,8 +124,12 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ plan }) => {
           </div>
         </div>
 
-        <div className="stat-pill">
-          <div className="stat-pill-icon" style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#38bdf8' }}>
+        <div
+          className="stat-pill"
+          role="group"
+          aria-label={`Timeline Progress: ${completedMilestones} of ${plan.timeline.length} Steps completed`}
+        >
+          <div className="stat-pill-icon" style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#38bdf8' }} aria-hidden="true">
             <Clock size={20} />
           </div>
           <div>

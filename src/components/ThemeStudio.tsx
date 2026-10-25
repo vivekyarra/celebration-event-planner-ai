@@ -10,20 +10,49 @@ import {
   Shirt,
   Sun,
 } from 'lucide-react';
-import { EventPlan, InvitationDraft } from '../types';
+import { EventPlan, InvitationDraft, ThemePalette } from '../types';
 
 interface ThemeStudioProps {
   plan: EventPlan;
+  onUpdatePalette?: (newPalette: ThemePalette) => void;
 }
 
-export const ThemeStudio: React.FC<ThemeStudioProps> = ({ plan }) => {
+export const ThemeStudio: React.FC<ThemeStudioProps> = ({ plan, onUpdatePalette }) => {
   const [copiedHex, setCopiedHex] = useState<string | null>(null);
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
+  const [customHex, setCustomHex] = useState('');
+  const [hexError, setHexError] = useState<string | null>(null);
+  const [activeCustomColor, setActiveCustomColor] = useState<string | null>(null);
 
   const copyHex = (hex: string) => {
     navigator.clipboard.writeText(hex);
     setCopiedHex(hex);
     setTimeout(() => setCopiedHex(null), 2000);
+  };
+
+  const handleCustomHexChange = (val: string) => {
+    setCustomHex(val);
+    const trimmed = val.trim();
+    if (!trimmed) {
+      setHexError(null);
+      setActiveCustomColor(null);
+      return;
+    }
+
+    const hexRegex = /^#[0-9a-fA-F]{6}$/;
+    if (!hexRegex.test(trimmed)) {
+      setHexError('Custom hex color must match regex /^#[0-9a-fA-F]{6}$/ (e.g. #6366f1)');
+      setActiveCustomColor(null);
+    } else {
+      setHexError(null);
+      setActiveCustomColor(trimmed);
+      if (onUpdatePalette) {
+        onUpdatePalette({
+          ...plan.themePalette,
+          accent: trimmed,
+        });
+      }
+    }
   };
 
   const copyInvite = (invite: InvitationDraft) => {
@@ -51,7 +80,7 @@ export const ThemeStudio: React.FC<ThemeStudioProps> = ({ plan }) => {
   const colors = [
     { label: 'Primary Accent', hex: plan.themePalette.primary },
     { label: 'Secondary Tone', hex: plan.themePalette.secondary },
-    { label: 'Highlight Glow', hex: plan.themePalette.accent },
+    { label: 'Highlight Glow', hex: activeCustomColor || plan.themePalette.accent },
   ];
 
   return (
@@ -106,7 +135,11 @@ export const ThemeStudio: React.FC<ThemeStudioProps> = ({ plan }) => {
                   padding: '12px 8px',
                 }}
               >
-                <div
+                <button
+                  type="button"
+                  className="color-swatch-btn"
+                  onClick={() => copyHex(c.hex)}
+                  aria-label={`Select ${c.label} Color ${c.hex}`}
                   style={{
                     width: '44px',
                     height: '44px',
@@ -115,6 +148,8 @@ export const ThemeStudio: React.FC<ThemeStudioProps> = ({ plan }) => {
                     boxShadow: `0 0 16px ${c.hex}66`,
                     marginBottom: '8px',
                     border: '2px solid rgba(255,255,255,0.2)',
+                    cursor: 'pointer',
+                    padding: 0,
                   }}
                 />
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center' }}>
@@ -134,8 +169,11 @@ export const ThemeStudio: React.FC<ThemeStudioProps> = ({ plan }) => {
                     background: 'rgba(255, 255, 255, 0.05)',
                     padding: '2px 6px',
                     borderRadius: '4px',
+                    border: 'none',
+                    cursor: 'pointer',
                   }}
                   title="Click to copy Hex"
+                  aria-label={`Copy ${c.label} Hex code ${c.hex}`}
                 >
                   {copiedHex === c.hex ? <Check size={12} color="#10b981" /> : <Copy size={12} />}
                   <span>{c.hex}</span>
@@ -144,8 +182,52 @@ export const ThemeStudio: React.FC<ThemeStudioProps> = ({ plan }) => {
             ))}
           </div>
 
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '14px' }}>
             <strong>Theme Vibe:</strong> {plan.themePalette.vibeDescription}
+          </div>
+
+          {/* Custom Hex Color Input */}
+          <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
+            <label className="form-label" htmlFor="custom-hex-input">
+              Custom Hex Color Override
+            </label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                id="custom-hex-input"
+                type="text"
+                className="form-input"
+                placeholder="#6366f1"
+                value={customHex}
+                onChange={(e) => handleCustomHexChange(e.target.value)}
+                aria-label="Custom Hex Color"
+                aria-invalid={hexError !== null}
+                aria-errormessage={hexError ? 'custom-hex-error' : undefined}
+                style={{ maxWidth: '160px', fontFamily: 'var(--font-mono)' }}
+              />
+              {activeCustomColor && (
+                <div
+                  role="img"
+                  aria-label={`Preview of custom color ${activeCustomColor}`}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: activeCustomColor,
+                    border: '2px solid rgba(255,255,255,0.4)',
+                    boxShadow: `0 0 10px ${activeCustomColor}88`,
+                  }}
+                />
+              )}
+            </div>
+            {hexError && (
+              <div
+                id="custom-hex-error"
+                role="alert"
+                style={{ color: '#f87171', fontSize: '0.78rem', marginTop: '6px', fontWeight: 500 }}
+              >
+                {hexError}
+              </div>
+            )}
           </div>
         </div>
 
@@ -258,6 +340,7 @@ export const ThemeStudio: React.FC<ThemeStudioProps> = ({ plan }) => {
                 className="btn btn-secondary btn-sm"
                 onClick={() => copyInvite(inv)}
                 style={{ flex: 1 }}
+                aria-label={`Copy ${inv.style} invitation text`}
               >
                 {copiedInviteId === inv.id ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
                 <span>{copiedInviteId === inv.id ? 'Copied!' : 'Copy'}</span>
@@ -268,7 +351,7 @@ export const ThemeStudio: React.FC<ThemeStudioProps> = ({ plan }) => {
                 className="btn btn-secondary btn-sm"
                 onClick={() => shareWhatsApp(inv)}
                 title="Share via WhatsApp"
-                aria-label="Share via WhatsApp"
+                aria-label={`Share ${inv.style} invitation via WhatsApp`}
               >
                 <Share2 size={14} color="#25D366" />
                 <span>WhatsApp</span>
@@ -279,7 +362,7 @@ export const ThemeStudio: React.FC<ThemeStudioProps> = ({ plan }) => {
                 className="btn btn-secondary btn-sm"
                 onClick={() => shareEmail(inv)}
                 title="Share via Email"
-                aria-label="Share via Email"
+                aria-label={`Share ${inv.style} invitation via Email`}
               >
                 <Mail size={14} color="#38bdf8" />
               </button>

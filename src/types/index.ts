@@ -93,6 +93,7 @@ export interface MenuItem {
   description: string;
   dietaryTags: string[];
   recommendedQuantity: string;
+  estimatedCost?: number;
 }
 
 export interface ChatMessage {

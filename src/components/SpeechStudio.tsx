@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Mic, Volume2, VolumeX, Copy, Check, Sparkles, Sliders } from 'lucide-react';
+import { Mic, Volume2, VolumeX, Copy, Check } from 'lucide-react';
 import { EventPlan } from '../types';
 import { useSpeech } from '../hooks/useSpeech';
+import { sanitizeHtml } from '../services/security';
 
 interface SpeechStudioProps {
   plan: EventPlan;
@@ -12,47 +13,70 @@ export const SpeechStudio: React.FC<SpeechStudioProps> = ({ plan }) => {
   const [tone, setTone] = useState<'humorous' | 'emotional' | 'motivational' | 'poetic'>('humorous');
   const [lengthMin, setLengthMin] = useState<number>(3);
   const [honoree, setHonoree] = useState('the Guest of Honor & everyone assembled');
+  const [customPrompt, setCustomPrompt] = useState('');
+  const [speed, setSpeed] = useState<number>(1.0);
   const [copied, setCopied] = useState(false);
+  const [promptError, setPromptError] = useState<string | null>(null);
 
   const { speak, stop, isSpeaking, isSupported } = useSpeech();
 
+  const handleCustomPromptChange = (val: string) => {
+    setCustomPrompt(val);
+    const trimmed = val.trim();
+    if (trimmed.length > 0 && trimmed.length < 3) {
+      setPromptError('Custom prompt must be at least 3 characters.');
+    } else if (trimmed.length > 500) {
+      setPromptError('Custom prompt cannot exceed 500 characters.');
+    } else {
+      setPromptError(null);
+    }
+  };
+
   const generateSpeech = () => {
+    const safeRole = role;
+    const safeTitle = plan.title;
+    const safeVenue = plan.venueType;
+    const safeHonoree = honoree;
+    const safePrompt = customPrompt.trim();
+
+    const promptInsertion = safePrompt ? `\n\nKey Message Focus: "${safePrompt}"\n` : '';
+
+    let rawSpeech = '';
+
     if (tone === 'humorous') {
-      return `Good evening everyone! For those who don't know me, I'm ${role}. When I was asked to speak tonight at ${plan.title}, I was told to keep it under ${lengthMin} minutes and to be on my best behavior. Naturally, I promised nothing.
-      
-Looking around this incredible ${plan.venueType} venue tonight, it’s impossible not to feel the warmth, laughter, and overwhelming energy in this room. We've gathered here not just to mark another date on the calendar, but to celebrate the unforgettable journey that brought us together.
-      
-To ${honoree}: You bring a spirit of genuine generosity and relentless joy that inspires every single person in this room.
-      
+      rawSpeech = `Good evening everyone! For those who don't know me, I'm ${safeRole}. When I was asked to speak tonight at ${safeTitle}, I was told to keep it under ${lengthMin} minutes and to be on my best behavior. Naturally, I promised nothing.
+${promptInsertion}
+Looking around this incredible ${safeVenue} venue tonight, it’s impossible not to feel the warmth, laughter, and overwhelming energy in this room. We've gathered here not just to mark another date on the calendar, but to celebrate the unforgettable journey that brought us together.
+
+To ${safeHonoree}: You bring a spirit of genuine generosity and relentless joy that inspires every single person in this room.
+
 So, if everyone could take their glasses—fill them high—let us raise a heartfelt toast: To unforgettable moments, treasured friendships, and a future brighter than all the sparklers tonight. Cheers! 🥂`;
-    }
-
-    if (tone === 'emotional') {
-      return `Distinguished guests, family, and lifelong friends: Welcome to this extraordinary evening celebrating ${plan.title}.
-      
+    } else if (tone === 'emotional') {
+      rawSpeech = `Distinguished guests, family, and lifelong friends: Welcome to this extraordinary evening celebrating ${safeTitle}.
+${promptInsertion}
 There are moments in life that seem to suspend time—evenings where every handshake, every smile, and every shared laugh weaves a tapestry of memories we will hold close forever. 
-      
-Standing here tonight, looking at the love radiating across these tables, I am reminded of how rare it is to find someone like ${honoree} who makes everyone around them feel valued, celebrated, and deeply appreciated.
-      
-May tonight remind us of the power of community, resilience, and genuine love. Let us raise our glasses: To lasting legacy, timeless memories, and the wonderful bond that binds us all together. To ${plan.title}! 🥂`;
-    }
 
-    if (tone === 'motivational') {
-      return `Welcome innovators, leaders, and dreamers to ${plan.title}!
-      
+Standing here tonight, looking at the love radiating across these tables, I am reminded of how rare it is to find someone like ${safeHonoree} who makes everyone around them feel valued, celebrated, and deeply appreciated.
+
+May tonight remind us of the power of community, resilience, and genuine love. Let us raise our glasses: To lasting legacy, timeless memories, and the wonderful bond that binds us all together. To ${safeTitle}! 🥂`;
+    } else if (tone === 'motivational') {
+      rawSpeech = `Welcome innovators, leaders, and dreamers to ${safeTitle}!
+${promptInsertion}
 Great milestones aren’t merely reached; they are forged through relentless dedication, shared vision, and courage. What started as an ambitious idea has brought ${plan.guestCount} passionate individuals under this roof tonight.
-      
-Tonight is a testament that when extraordinary minds collaborate, the impossible becomes standard procedure. To ${honoree} and every contributor who made this celebration a reality: We honor your passion, your grit, and your craft.
-      
+
+Tonight is a testament that when extraordinary minds collaborate, the impossible becomes standard procedure. To ${safeHonoree} and every contributor who made this celebration a reality: We honor your passion, your grit, and your craft.
+
 Here is to the next frontier, the bold chapters still unwritten, and the victories ahead. Raise your glasses! 🚀`;
+    } else {
+      // Poetic
+      rawSpeech = `Beneath the gentle glow of ${plan.themePalette.lightingStyle.toLowerCase()}, we gather under a constellation of friendship for ${safeTitle}.
+${promptInsertion}
+Time moves in quiet whispers, but celebrations like this anchor us to the joy of the present. Tonight, laughter is our song, fellowship is our anchor, and celebration is our compass.
+
+To ${safeHonoree}: May your journey continue to be blessed with abundance, laughter, and stars that guide your way. To life, to love, and to tonight. 🥂`;
     }
 
-    // Poetic
-    return `Beneath the gentle glow of ${plan.themePalette.lightingStyle.toLowerCase()}, we gather under a constellation of friendship for ${plan.title}.
-    
-Time moves in quiet whispers, but celebrations like this anchor us to the joy of the present. Tonight, laughter is our song, fellowship is our anchor, and celebration is our compass.
-    
-To ${honoree}: May your journey continue to be blessed with abundance, laughter, and stars that guide your way. To life, to love, and to tonight. 🥂`;
+    return sanitizeHtml(rawSpeech);
   };
 
   const currentSpeech = generateSpeech();
@@ -67,7 +91,7 @@ To ${honoree}: May your journey continue to be blessed with abundance, laughter,
     if (isSpeaking) {
       stop();
     } else {
-      speak(currentSpeech);
+      speak(currentSpeech, speed);
     }
   };
 
@@ -90,14 +114,19 @@ To ${honoree}: May your journey continue to be blessed with abundance, laughter,
               type="button"
               className={`btn ${isSpeaking ? 'btn-festive' : 'btn-secondary'} btn-sm`}
               onClick={handleToggleAudio}
-              aria-label={isSpeaking ? 'Stop speech preview' : 'Listen to speech preview'}
+              aria-label={isSpeaking ? 'Stop speech preview' : 'Play speech preview'}
             >
               {isSpeaking ? <VolumeX size={16} /> : <Volume2 size={16} />}
               <span>{isSpeaking ? 'Stop Audio' : 'Listen Aloud (AI TTS)'}</span>
             </button>
           )}
 
-          <button type="button" className="btn btn-secondary btn-sm" onClick={handleCopy}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={handleCopy}
+            aria-label="Copy speech script"
+          >
             {copied ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
             <span>{copied ? 'Copied!' : 'Copy Script'}</span>
           </button>
@@ -126,6 +155,7 @@ To ${honoree}: May your journey continue to be blessed with abundance, laughter,
             className="form-select"
             value={role}
             onChange={(e) => setRole(e.target.value)}
+            aria-label="Speaker persona select"
           >
             <option value="Best Friend / Co-Host">Best Friend / Co-Host</option>
             <option value="Host / Master of Ceremonies">Host / Master of Ceremonies</option>
@@ -144,6 +174,7 @@ To ${honoree}: May your journey continue to be blessed with abundance, laughter,
             className="form-select"
             value={tone}
             onChange={(e) => setTone(e.target.value as 'humorous' | 'emotional' | 'motivational' | 'poetic')}
+            aria-label="Tone of voice select"
           >
             <option value="humorous">😄 Witty & Humorous</option>
             <option value="emotional">❤️ Heartfelt & Emotional</option>
@@ -161,11 +192,33 @@ To ${honoree}: May your journey continue to be blessed with abundance, laughter,
             className="form-select"
             value={lengthMin}
             onChange={(e) => setLengthMin(parseInt(e.target.value, 10))}
+            aria-label="Target duration select"
           >
             <option value={1}>1 Minute (Quick Toast)</option>
             <option value={3}>3 Minutes (Standard Speech)</option>
             <option value={5}>5 Minutes (Full Keynote Address)</option>
           </select>
+        </div>
+
+        <div>
+          <label className="form-label" htmlFor="speech-speed">
+            Speech Speed ({speed.toFixed(1)}x)
+          </label>
+          <input
+            id="speech-speed"
+            type="range"
+            min={0.5}
+            max={2.0}
+            step={0.1}
+            value={speed}
+            onChange={(e) => setSpeed(parseFloat(e.target.value))}
+            aria-label="Speech playback speed slider"
+            aria-valuemin={0.5}
+            aria-valuemax={2.0}
+            aria-valuenow={speed}
+            className="form-range"
+            style={{ width: '100%', marginTop: '6px' }}
+          />
         </div>
 
         <div>
@@ -178,8 +231,45 @@ To ${honoree}: May your journey continue to be blessed with abundance, laughter,
             className="form-input"
             value={honoree}
             onChange={(e) => setHonoree(e.target.value)}
+            aria-label="Honoree name or team"
           />
         </div>
+      </div>
+
+      {/* User Custom Prompt Input with Bounds Validation */}
+      <div
+        style={{
+          background: 'var(--bg-surface)',
+          padding: '16px',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '20px',
+          border: '1px solid var(--border)',
+        }}
+      >
+        <label className="form-label" htmlFor="speech-custom-prompt">
+          Custom Key Message / Theme Focus (3 - 500 characters)
+        </label>
+        <input
+          id="speech-custom-prompt"
+          type="text"
+          className="form-input"
+          placeholder="e.g. Celebrate 5 years of milestone growth, resilience during challenges, and bright horizons..."
+          value={customPrompt}
+          onChange={(e) => handleCustomPromptChange(e.target.value)}
+          aria-label="Custom speech prompt input"
+          aria-invalid={promptError !== null}
+          aria-errormessage={promptError ? 'speech-prompt-error' : undefined}
+          maxLength={500}
+        />
+        {promptError && (
+          <div
+            id="speech-prompt-error"
+            role="alert"
+            style={{ color: '#f87171', fontSize: '0.8rem', marginTop: '6px', fontWeight: 500 }}
+          >
+            {promptError}
+          </div>
+        )}
       </div>
 
       {/* Teleprompter Card */}
@@ -200,7 +290,7 @@ To ${honoree}: May your journey continue to be blessed with abundance, laughter,
             <span className="badge badge-success">~{lengthMin} min read</span>
             {isSpeaking && (
               <span className="badge badge-warning" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span className="spin-slow">●</span> Playing Audio...
+                <span className="spin-slow">●</span> Playing Audio ({speed.toFixed(1)}x)...
               </span>
             )}
           </div>
@@ -210,6 +300,8 @@ To ${honoree}: May your journey continue to be blessed with abundance, laughter,
         </div>
 
         <div
+          role="region"
+          aria-label="Speech rehearsal script text"
           style={{
             fontSize: '1rem',
             lineHeight: '1.8',
@@ -220,9 +312,8 @@ To ${honoree}: May your journey continue to be blessed with abundance, laughter,
             overflowY: 'auto',
             paddingRight: '10px',
           }}
-        >
-          {currentSpeech}
-        </div>
+          dangerouslySetInnerHTML={{ __html: currentSpeech }}
+        />
       </div>
     </div>
   );

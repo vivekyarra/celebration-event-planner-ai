@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { UtensilsCrossed, Plus, Sparkles } from 'lucide-react';
 import { EventPlan, MenuItem } from '../types';
 import { DietaryAuditBanner } from './DietaryAuditBanner';
+import { validateNumericRange, sanitizeHtml } from '../services/security';
 
 interface CateringMenuProps {
   plan: EventPlan;
@@ -13,28 +14,54 @@ export const CateringMenu: React.FC<CateringMenuProps> = ({
   onUpdateMenu,
 }) => {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedDietaryFilter, setSelectedDietaryFilter] = useState<string>('All');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [course, setCourse] = useState<'starters' | 'mains' | 'desserts' | 'beverages'>('starters');
   const [tagInput, setTagInput] = useState('Vegetarian, Gluten-Free');
   const [portion, setPortion] = useState('1 serving per guest');
+  const [costInput, setCostInput] = useState<string>('25');
+  const [costError, setCostError] = useState<string | null>(null);
+
+  const dietaryFilterOptions = ['All', 'Vegetarian', 'Vegan', 'Gluten-Free', 'Halal', 'Dairy-Free'];
+
+  const handleCostChange = (val: string) => {
+    setCostInput(val);
+    const parsed = parseFloat(val);
+    const rangeCheck = validateNumericRange(parsed, 0, 5000, 'Estimated Cost');
+    if (!rangeCheck.valid) {
+      setCostError(rangeCheck.error || 'Estimated cost must be between $0 and $5,000');
+    } else {
+      setCostError(null);
+    }
+  };
 
   const handleAddDish = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name) return;
+    if (!name.trim()) return;
+
+    const numCost = parseFloat(costInput);
+    const rangeCheck = validateNumericRange(numCost, 0, 5000, 'Estimated Cost');
+    if (!rangeCheck.valid) {
+      setCostError(rangeCheck.error || 'Estimated cost must be between $0 and $5,000');
+      return;
+    }
 
     const newDish: MenuItem = {
       id: `dish-${Date.now()}`,
-      name,
-      description,
+      name: sanitizeHtml(name.trim()),
+      description: sanitizeHtml(description.trim()),
       course,
-      dietaryTags: tagInput.split(',').map((t) => t.trim()).filter(Boolean),
-      recommendedQuantity: portion,
+      dietaryTags: tagInput.split(',').map((t) => sanitizeHtml(t.trim())).filter(Boolean),
+      recommendedQuantity: sanitizeHtml(portion.trim()),
+      estimatedCost: numCost,
     };
 
     onUpdateMenu([...plan.menu, newDish]);
     setName('');
     setDescription('');
+    setCostInput('25');
+    setCostError(null);
     setShowAddModal(false);
   };
 
@@ -77,10 +104,51 @@ export const CateringMenu: React.FC<CateringMenuProps> = ({
         />
       </div>
 
+      {/* Dietary Filter Chips */}
+      <div
+        role="region"
+        aria-label="Dietary preference filters"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          flexWrap: 'wrap',
+          marginBottom: '20px',
+        }}
+      >
+        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+          Dietary Filter:
+        </span>
+        {dietaryFilterOptions.map((filter) => {
+          const isPressed = selectedDietaryFilter === filter;
+          return (
+            <button
+              key={filter}
+              type="button"
+              role="button"
+              aria-pressed={isPressed}
+              aria-label={`Filter menu by dietary preference: ${filter}`}
+              className={`btn btn-sm ${isPressed ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setSelectedDietaryFilter(filter)}
+            >
+              {filter}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Courses display */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {courses.map((c) => {
-          const items = plan.menu.filter((m) => m.course === c);
+          const items = plan.menu
+            .filter((m) => m.course === c)
+            .filter((m) => {
+              if (selectedDietaryFilter === 'All') return true;
+              return m.dietaryTags.some(
+                (t) => t.toLowerCase() === selectedDietaryFilter.toLowerCase()
+              );
+            });
+
           if (items.length === 0) return null;
 
           return (
@@ -158,6 +226,11 @@ export const CateringMenu: React.FC<CateringMenuProps> = ({
                         }}
                       >
                         Est. Portion: {item.recommendedQuantity}
+                        {item.estimatedCost !== undefined && (
+                          <span style={{ marginLeft: '8px', color: '#34d399' }}>
+                            • ${item.estimatedCost.toFixed(2)}/guest
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -186,6 +259,7 @@ export const CateringMenu: React.FC<CateringMenuProps> = ({
                     className="form-select"
                     value={course}
                     onChange={(e) => setCourse(e.target.value as 'starters' | 'mains' | 'desserts' | 'beverages')}
+                    aria-label="Dish Course Type"
                   >
                     <option value="starters">Starters</option>
                     <option value="mains">Mains</option>
@@ -204,6 +278,7 @@ export const CateringMenu: React.FC<CateringMenuProps> = ({
                     className="form-input"
                     value={portion}
                     onChange={(e) => setPortion(e.target.value)}
+                    aria-label="Dish portion sizing"
                   />
                 </div>
               </div>
@@ -220,6 +295,7 @@ export const CateringMenu: React.FC<CateringMenuProps> = ({
                   placeholder="e.g., Saffron Infused Biryani & Raita"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  aria-label="Dish name"
                 />
               </div>
 
@@ -234,6 +310,7 @@ export const CateringMenu: React.FC<CateringMenuProps> = ({
                   placeholder="Fragrant basmati rice, caramelised onions, fresh mint..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  aria-label="Dish description and ingredients"
                 />
               </div>
 
@@ -248,14 +325,54 @@ export const CateringMenu: React.FC<CateringMenuProps> = ({
                   placeholder="Vegetarian, Gluten-Free, Halal"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
+                  aria-label="Dietary tags"
                 />
               </div>
 
+              <div className="form-group">
+                <label className="form-label" htmlFor="dish-cost">
+                  Estimated Cost per Serving ($)
+                </label>
+                <input
+                  id="dish-cost"
+                  type="number"
+                  min={0}
+                  max={5000}
+                  step="1"
+                  className="form-input"
+                  placeholder="25"
+                  value={costInput}
+                  onChange={(e) => handleCostChange(e.target.value)}
+                  aria-label="Estimated cost per serving"
+                  aria-invalid={costError !== null}
+                  aria-errormessage={costError ? 'dish-cost-error' : undefined}
+                />
+                {costError && (
+                  <div
+                    id="dish-cost-error"
+                    role="alert"
+                    style={{ color: '#f87171', fontSize: '0.78rem', marginTop: '4px' }}
+                  >
+                    {costError}
+                  </div>
+                )}
+              </div>
+
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowAddModal(false)}
+                  aria-label="Cancel adding dish"
+                >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={costError !== null}
+                  aria-label="Save dish to menu"
+                >
                   Save Dish
                 </button>
               </div>

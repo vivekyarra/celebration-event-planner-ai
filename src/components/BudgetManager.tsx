@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import {
   DollarSign,
-  TrendingDown,
   Plus,
   AlertTriangle,
   Lightbulb,
+  Trash2,
+  TrendingUp,
 } from 'lucide-react';
 import { BudgetCategory, EventPlan } from '../types';
+import { useBudgetManager } from '../hooks/useBudgetManager';
 
 interface BudgetManagerProps {
   plan: EventPlan;
@@ -17,55 +19,38 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({
   plan,
   onUpdateBudget,
 }) => {
+  const {
+    categories,
+    totalAllocated,
+    totalSpent,
+    remainingBudget,
+    highestExpenseCategory,
+    totalPercentage,
+    updateCategoryPercentage,
+    recordSpending,
+    addCustomCategory,
+    removeCategory,
+  } = useBudgetManager(plan.budgetBreakdown, plan.totalBudget, onUpdateBudget);
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [newCatName, setNewCatName] = useState('');
   const [newCatAmount, setNewCatAmount] = useState('');
 
-  const totalSpent = plan.budgetBreakdown.reduce((sum, c) => sum + c.spentAmount, 0);
-  const totalAllocated = plan.budgetBreakdown.reduce((sum, c) => sum + c.allocatedAmount, 0);
-  const totalPercentage = plan.budgetBreakdown.reduce((sum, c) => sum + c.percentage, 0);
-
-  const handlePercentageChange = (id: string, newPct: number) => {
-    const updated = plan.budgetBreakdown.map((cat) => {
-      if (cat.id === id) {
-        return {
-          ...cat,
-          percentage: newPct,
-          allocatedAmount: Math.round((plan.totalBudget * newPct) / 100),
-        };
-      }
-      return cat;
-    });
-    onUpdateBudget(updated);
-  };
-
-  const handleSpentChange = (id: string, spent: number) => {
-    const updated = plan.budgetBreakdown.map((cat) => {
-      if (cat.id === id) {
-        return { ...cat, spentAmount: spent };
-      }
-      return cat;
-    });
-    onUpdateBudget(updated);
-  };
-
   const handleAddCategory = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCatName || !newCatAmount) return;
+    if (!newCatName.trim() || !newCatAmount) return;
     const amount = parseFloat(newCatAmount);
-    const pct = Math.round((amount / plan.totalBudget) * 100);
+    const pct = plan.totalBudget > 0 ? Math.round((amount / plan.totalBudget) * 100) : 0;
 
-    const newCategory: BudgetCategory = {
-      id: `custom-${Date.now()}`,
-      name: newCatName,
+    addCustomCategory({
+      name: newCatName.trim(),
       percentage: pct,
       allocatedAmount: amount,
       spentAmount: 0,
       icon: 'Tag',
       recommendations: ['Track receipts and invoices directly with vendor.'],
-    };
+    });
 
-    onUpdateBudget([...plan.budgetBreakdown, newCategory]);
     setNewCatName('');
     setNewCatAmount('');
     setShowAddModal(false);
@@ -76,7 +61,7 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({
       <div className="section-header">
         <div>
           <h2 className="section-title">
-            <DollarSign size={24} color="#6366f1" />
+            <DollarSign size={24} color="#6366f1" aria-hidden="true" />
             Dynamic Budget Allocator & Cost Optimization
           </h2>
           <p className="section-subtitle">
@@ -88,8 +73,10 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({
           type="button"
           className="btn btn-secondary btn-sm"
           onClick={() => setShowAddModal(true)}
+          aria-haspopup="dialog"
+          aria-label="Add custom budget line item"
         >
-          <Plus size={16} />
+          <Plus size={16} aria-hidden="true" />
           <span>Add Custom Category</span>
         </button>
       </div>
@@ -104,7 +91,16 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({
           border: '1px solid var(--border)',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '8px',
+            marginBottom: '8px',
+            fontSize: '0.9rem',
+          }}
+        >
           <span>
             Total Allocated:{' '}
             <strong>
@@ -127,6 +123,11 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({
             background: 'rgba(255, 255, 255, 0.08)',
             overflow: 'hidden',
           }}
+          role="progressbar"
+          aria-valuenow={Math.min(100, Math.round((totalSpent / (plan.totalBudget || 1)) * 100))}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Budget utilization progress"
         >
           <div
             style={{
@@ -141,6 +142,27 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({
           />
         </div>
 
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '8px',
+            marginTop: '10px',
+            fontSize: '0.8rem',
+          }}
+        >
+          <span style={{ color: remainingBudget >= 0 ? 'var(--text-muted)' : '#ef4444' }}>
+            Remaining Buffer: <strong>{plan.currency} {remainingBudget.toLocaleString()}</strong>
+          </span>
+          {highestExpenseCategory && (
+            <span style={{ color: 'var(--text-dim)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <TrendingUp size={12} color="#818cf8" aria-hidden="true" />
+              Primary Cost Driver: <strong>{highestExpenseCategory.name}</strong> ({plan.currency} {highestExpenseCategory.allocatedAmount.toLocaleString()})
+            </span>
+          )}
+        </div>
+
         {totalPercentage !== 100 && (
           <div
             style={{
@@ -151,8 +173,10 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({
               fontSize: '0.8rem',
               color: '#fbbf24',
             }}
+            role="status"
+            aria-live="polite"
           >
-            <AlertTriangle size={14} />
+            <AlertTriangle size={14} aria-hidden="true" />
             <span>
               Budget percentages currently total {totalPercentage}%. Adjust sliders to achieve 100% balance.
             </span>
@@ -168,10 +192,11 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({
           gap: '16px',
         }}
       >
-        {plan.budgetBreakdown.map((cat) => {
-          const spentPct = cat.allocatedAmount > 0
-            ? Math.round((cat.spentAmount / cat.allocatedAmount) * 100)
-            : 0;
+        {categories.map((cat) => {
+          const spentPct =
+            cat.allocatedAmount > 0
+              ? Math.round((cat.spentAmount / cat.allocatedAmount) * 100)
+              : 0;
 
           return (
             <div
@@ -190,7 +215,20 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({
                 <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-main)' }}>
                   {cat.name}
                 </span>
-                <span className="badge badge-info">{cat.percentage}%</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="badge badge-info">{cat.percentage}%</span>
+                  {cat.id.startsWith('custom') && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      style={{ padding: '2px 6px', color: '#ef4444', height: 'auto', minHeight: 'unset' }}
+                      onClick={() => removeCategory(cat.id)}
+                      aria-label={`Remove category ${cat.name}`}
+                    >
+                      <Trash2 size={14} aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -215,9 +253,9 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({
                   min="0"
                   max="60"
                   value={cat.percentage}
-                  onChange={(e) => handlePercentageChange(cat.id, parseInt(e.target.value, 10))}
+                  onChange={(e) => updateCategoryPercentage(cat.id, parseInt(e.target.value, 10))}
                   style={{ width: '100%', accentColor: 'var(--primary)' }}
-                  aria-label={`${cat.name} percentage slider`}
+                  aria-label={`${cat.name} percentage slider (${cat.percentage}%)`}
                 />
               </div>
 
@@ -233,7 +271,7 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({
                     type="number"
                     min="0"
                     value={cat.spentAmount}
-                    onChange={(e) => handleSpentChange(cat.id, parseFloat(e.target.value) || 0)}
+                    onChange={(e) => recordSpending(cat.id, parseFloat(e.target.value) || 0)}
                     style={{
                       width: '100px',
                       padding: '4px 8px',
@@ -251,7 +289,15 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({
 
               {/* Spent bar */}
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-dim)', marginBottom: '3px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: '0.75rem',
+                    color: 'var(--text-dim)',
+                    marginBottom: '3px',
+                  }}
+                >
                   <span>Utilization</span>
                   <span style={{ color: spentPct > 100 ? '#ef4444' : 'inherit' }}>{spentPct}%</span>
                 </div>
@@ -262,6 +308,11 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({
                     background: 'rgba(255, 255, 255, 0.06)',
                     overflow: 'hidden',
                   }}
+                  role="progressbar"
+                  aria-valuenow={Math.min(100, spentPct)}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label={`${cat.name} utilization`}
                 >
                   <div
                     style={{
@@ -286,7 +337,7 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600, marginBottom: '4px' }}>
-                    <Lightbulb size={12} color="#fbbf24" />
+                    <Lightbulb size={12} color="#fbbf24" aria-hidden="true" />
                     <span>Cost-Saving Insights:</span>
                   </div>
                   <ul style={{ paddingLeft: '16px', margin: 0 }}>
@@ -341,7 +392,11 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowAddModal(false)}
+                >
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
