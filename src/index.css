@@ -69,6 +69,15 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin-animate {
+  animation: spin 1s linear infinite;
+}
+
 /* Base App Layout */
 .app-container {
   min-height: 100vh;
@@ -727,4 +736,20 @@ textarea:focus-visible,
   flex-direction: column;
   gap: 8px;
   pointer-events: none;
+}
+
+@media print {
+  .no-print, .floating-copilot-trigger, .chat-drawer, 
+  .navbar-actions, .tab-navigation, .modal-overlay { display: none !important; }
+  
+  .print-section { page-break-inside: avoid; }
+  
+  body { background: #fff !important; color: #111 !important; font-size: 12pt; }
+  
+  .event-header-card { 
+    background: #fff !important; border: 2px solid #333 !important; 
+    color: #111 !important; -webkit-print-color-adjust: exact;
+  }
+
+  @page { margin: 1.5cm; size: A4; }
 }

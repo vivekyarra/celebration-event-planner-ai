@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   DollarSign,
   Clock,
@@ -63,10 +63,23 @@ export const App: React.FC = () => {
   });
 
   // Debounced auto-save hook for maximum efficiency and persistence reliability
-  useEventPersistence(plan, 'celebrite_event_plan', 500);
+  const { saveStatus } = useEventPersistence(plan, 'celebrite_event_plan', 500);
 
   // Screen reader announcer for WCAG 2.1 AA live accessibility updates
   const { announce } = useAnnouncer();
+
+  // Memoized derived KPI metrics for high-efficiency updates
+  const totalSpent = useMemo(() => {
+    return plan.budgetBreakdown.reduce((sum, cat) => sum + cat.spentAmount, 0);
+  }, [plan.budgetBreakdown]);
+
+  const confirmedCount = useMemo(() => {
+    return plan.guests.filter((g) => g.rsvpStatus === 'confirmed').length;
+  }, [plan.guests]);
+
+  const pendingCount = useMemo(() => {
+    return plan.guests.filter((g) => g.rsvpStatus === 'pending').length;
+  }, [plan.guests]);
 
   useEffect(() => {
     const handleGlobalKey = (e: KeyboardEvent) => {
@@ -79,52 +92,52 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleGlobalKey);
   }, []);
 
-  const handleSaveApiKey = (key: string) => {
+  const handleSaveApiKey = useCallback((key: string) => {
     setApiKey(key);
     localStorage.setItem('celebrite_gemini_key', key);
     announce('Gemini API key saved successfully');
-  };
+  }, [announce]);
 
-  const handleUpdateBudget = (newCategories: BudgetCategory[]) => {
+  const handleUpdateBudget = useCallback((newCategories: BudgetCategory[]) => {
     setPlan((prev) => ({ ...prev, budgetBreakdown: newCategories }));
     announce('Budget allocations updated');
-  };
+  }, [announce]);
 
-  const handleUpdateTimeline = (newTimeline: TimelineItem[]) => {
+  const handleUpdateTimeline = useCallback((newTimeline: TimelineItem[]) => {
     setPlan((prev) => ({ ...prev, timeline: newTimeline }));
     announce('Timeline milestones updated');
-  };
+  }, [announce]);
 
-  const handleUpdateGuests = (newGuests: Guest[]) => {
+  const handleUpdateGuests = useCallback((newGuests: Guest[]) => {
     setPlan((prev) => ({ ...prev, guests: newGuests }));
     announce('Guest list updated');
-  };
+  }, [announce]);
 
-  const handleUpdateMenu = (newMenu: MenuItem[]) => {
+  const handleUpdateMenu = useCallback((newMenu: MenuItem[]) => {
     setPlan((prev) => ({ ...prev, menu: newMenu }));
     announce('Catering menu updated');
-  };
+  }, [announce]);
 
-  const handleAddMenuItem = (item: MenuItem) => {
+  const handleAddMenuItem = useCallback((item: MenuItem) => {
     setPlan((prev) => ({ ...prev, menu: [item, ...prev.menu] }));
     announce(`Added ${item.name} to menu`);
-  };
+  }, [announce]);
 
-  const handleUpdateVendors = (newVendors: VendorItem[]) => {
+  const handleUpdateVendors = useCallback((newVendors: VendorItem[]) => {
     setPlan((prev) => ({ ...prev, vendors: newVendors }));
     announce('Vendor directory updated');
-  };
+  }, [announce]);
 
-  const handleApplyScenario = (newBudget: number) => {
+  const handleApplyScenario = useCallback((newBudget: number) => {
     setPlan((prev) => ({
       ...prev,
       totalBudget: newBudget,
       budgetBreakdown: calculateBudgetBreakdown(prev.eventType, newBudget),
     }));
     announce(`Applied what-if scenario with budget of ${plan.currency} ${newBudget.toLocaleString()}`);
-  };
+  }, [announce, plan.currency]);
 
-  const handlePaletteAction = (actionId: string) => {
+  const handlePaletteAction = useCallback((actionId: string) => {
     if (actionId.startsWith('tab-')) {
       const tabName = actionId.replace('tab-', '') as ActiveTab;
       setActiveTab(tabName);
@@ -135,7 +148,7 @@ export const App: React.FC = () => {
     } else if (actionId === 'act-wizard') {
       setIsWizardOpen(true);
     }
-  };
+  }, []);
 
   const tabs = [
     { id: 'budget', label: 'Budget Allocator', icon: DollarSign },
@@ -155,6 +168,7 @@ export const App: React.FC = () => {
         onOpenApiKey={() => setIsApiKeyOpen(true)}
         onOpenPalette={() => setIsPaletteOpen(true)}
         hasApiKey={Boolean(apiKey)}
+        saveStatus={saveStatus}
       />
 
       <main className="main-content" role="main" id="main-content">
@@ -192,39 +206,53 @@ export const App: React.FC = () => {
 
           {/* Module Content Views */}
           <div role="tabpanel" id={`panel-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>
-            <ErrorBoundary>
-              {activeTab === 'budget' && (
+            {activeTab === 'budget' && (
+              <ErrorBoundary>
                 <BudgetManager plan={plan} onUpdateBudget={handleUpdateBudget} />
-              )}
+              </ErrorBoundary>
+            )}
 
-              {activeTab === 'timeline' && (
+            {activeTab === 'timeline' && (
+              <ErrorBoundary>
                 <TimelineRunOfShow plan={plan} onUpdateTimeline={handleUpdateTimeline} />
-              )}
+              </ErrorBoundary>
+            )}
 
-              {activeTab === 'theme' && (
+            {activeTab === 'theme' && (
+              <ErrorBoundary>
                 <ThemeStudio plan={plan} />
-              )}
+              </ErrorBoundary>
+            )}
 
-              {activeTab === 'menu' && (
+            {activeTab === 'menu' && (
+              <ErrorBoundary>
                 <CateringMenu plan={plan} onUpdateMenu={handleUpdateMenu} />
-              )}
+              </ErrorBoundary>
+            )}
 
-              {activeTab === 'guests' && (
+            {activeTab === 'guests' && (
+              <ErrorBoundary>
                 <GuestTracker plan={plan} onUpdateGuests={handleUpdateGuests} />
-              )}
+              </ErrorBoundary>
+            )}
 
-              {activeTab === 'vendors' && (
+            {activeTab === 'vendors' && (
+              <ErrorBoundary>
                 <VendorDirectory plan={plan} onUpdateVendors={handleUpdateVendors} />
-              )}
+              </ErrorBoundary>
+            )}
 
-              {activeTab === 'speech' && (
+            {activeTab === 'speech' && (
+              <ErrorBoundary>
                 <SpeechStudio plan={plan} />
-              )}
+              </ErrorBoundary>
+            )}
 
-              {activeTab === 'scenarios' && (
+            {activeTab === 'scenarios' && (
+              <ErrorBoundary>
                 <ScenarioSimulator plan={plan} onApplyScenario={handleApplyScenario} />
-              )}
-            </ErrorBoundary>
+              </ErrorBoundary>
+            )}
           </div>
         </ErrorBoundary>
       </main>

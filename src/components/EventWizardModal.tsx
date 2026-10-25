@@ -33,10 +33,12 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
   const [venueType, setVenueType] = useState<VenueType>('indoor');
   const [themeVibe, setThemeVibe] = useState('Golden Velvet Celebration');
   const [dietaryInput, setDietaryInput] = useState('Vegetarian, Gluten-Free, Vegan Friendly');
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   if (!isOpen) return null;
 
   const loadPreset = (presetName: string) => {
+    setValidationErrors([]);
     switch (presetName) {
       case 'wedding':
         setEventType('wedding');
@@ -94,6 +96,23 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
 
   const handleGenerate = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const errs: string[] = [];
+    if (!title.trim()) {
+      errs.push('Celebration / Event Name is required.');
+    }
+    if (guestCount < 5 || guestCount > 5000) {
+      errs.push('Target guests must be between 5 and 5,000 attendees.');
+    }
+    if (totalBudget < 100 || totalBudget > 10000000) {
+      errs.push('Total budget must be between 100 and 10,000,000.');
+    }
+
+    if (errs.length > 0) {
+      setValidationErrors(errs);
+      return;
+    }
+    setValidationErrors([]);
 
     const dietList = dietaryInput.split(',').map((s) => s.trim()).filter(Boolean);
     const newPlan: EventPlan = {
@@ -182,7 +201,33 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
           </div>
         </div>
 
-        <form onSubmit={handleGenerate}>
+        <form onSubmit={handleGenerate} noValidate>
+          {validationErrors.length > 0 && (
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="form-validation-summary"
+              style={{
+                background: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid #ef4444',
+                borderRadius: 'var(--radius-md)',
+                padding: '12px 16px',
+                marginBottom: '18px',
+                color: '#fca5a5',
+                fontSize: '0.85rem',
+              }}
+            >
+              <div style={{ fontWeight: 600, marginBottom: '6px', color: '#f87171' }}>
+                Please resolve the following validation errors:
+              </div>
+              <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                {validationErrors.map((err, idx) => (
+                  <li key={idx}>{err}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="form-group">
             <label className="form-label" htmlFor="w-title">
               Celebration / Event Name
@@ -192,9 +237,16 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
               type="text"
               className="form-input"
               required
+              aria-describedby="w-title-help"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (validationErrors.length > 0) setValidationErrors([]);
+              }}
             />
+            <span id="w-title-help" style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
+              Give your celebration a memorable, recognizable name
+            </span>
           </div>
 
           <div className="form-row">
@@ -280,9 +332,16 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
                 max="5000"
                 className="form-input"
                 required
+                aria-describedby="w-guests-help"
                 value={guestCount}
-                onChange={(e) => setGuestCount(parseInt(e.target.value, 10) || 10)}
+                onChange={(e) => {
+                  setGuestCount(parseInt(e.target.value, 10) || 0);
+                  if (validationErrors.length > 0) setValidationErrors([]);
+                }}
               />
+              <span id="w-guests-help" style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
+                Must be between 5 and 5,000 guests
+              </span>
             </div>
 
             <div className="form-group">
@@ -293,12 +352,20 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({
                 id="w-budget"
                 type="number"
                 min="100"
+                max="10000000"
                 step="50"
                 className="form-input"
                 required
+                aria-describedby="w-budget-help"
                 value={totalBudget}
-                onChange={(e) => setTotalBudget(parseFloat(e.target.value) || 500)}
+                onChange={(e) => {
+                  setTotalBudget(parseFloat(e.target.value) || 0);
+                  if (validationErrors.length > 0) setValidationErrors([]);
+                }}
               />
+              <span id="w-budget-help" style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
+                Must be between 100 and 10,000,000
+              </span>
             </div>
           </div>
 

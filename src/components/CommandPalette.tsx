@@ -173,6 +173,27 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           <span>Tip: Press <strong>Esc</strong> to exit</span>
           <span>Shortcut: <strong>Ctrl + K</strong></span>
         </div>
+
+        <div
+          style={{
+            padding: '10px 16px',
+            background: 'rgba(15, 23, 42, 0.75)',
+            borderTop: '1px solid var(--border)',
+            fontSize: '0.75rem',
+            color: 'var(--text-muted)',
+          }}
+          aria-label="Available shortcuts list"
+        >
+          <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>
+            Available shortcuts:
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px', fontFamily: 'var(--font-mono)' }}>
+            <div>Ctrl+K → Command Palette</div>
+            <div>Tab → Next module</div>
+            <div>Shift+Tab → Previous module</div>
+            <div>Escape → Close modal</div>
+          </div>
+        </div>
       </div>
     </div>
   );

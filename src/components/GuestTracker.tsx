@@ -22,6 +22,7 @@ export const GuestTracker: React.FC<GuestTrackerProps> = ({
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [announcement, setAnnouncement] = useState('');
 
   // New guest state
   const [name, setName] = useState('');
@@ -38,8 +39,11 @@ export const GuestTracker: React.FC<GuestTrackerProps> = ({
     .reduce((sum, g) => sum + 1 + g.plusOnes, 0);
 
   const handleStatusChange = (id: string, newStatus: RSVPStatus) => {
+    const targetGuest = plan.guests.find((g) => g.id === id);
+    const guestName = targetGuest ? targetGuest.name : 'Guest';
     const updated = plan.guests.map((g) => (g.id === id ? { ...g, rsvpStatus: newStatus } : g));
     onUpdateGuests(updated);
+    setAnnouncement(`${guestName} RSVP status updated to ${newStatus}`);
   };
 
   const handleAddGuest = (e: React.FormEvent) => {
@@ -97,6 +101,11 @@ export const GuestTracker: React.FC<GuestTrackerProps> = ({
 
   return (
     <div className="section-card" aria-label="Guest and RSVP Tracker">
+      {/* Screen reader live region for RSVP announcements */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {announcement}
+      </div>
+
       <div className="section-header">
         <div>
           <h2 className="section-title">
