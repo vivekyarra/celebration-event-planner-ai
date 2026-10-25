@@ -312,8 +312,9 @@ To ${safeHonoree}: May your journey continue to be blessed with abundance, laugh
             overflowY: 'auto',
             paddingRight: '10px',
           }}
-          dangerouslySetInnerHTML={{ __html: currentSpeech }}
-        />
+        >
+          {currentSpeech}
+        </div>
       </div>
     </div>
   );
