@@ -13,12 +13,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@rolldown/binding-win32-x64-msvc": "^1.2.15",
     "canvas-confetti": "^1.9.4",
-    "lightningcss-win32-x64-msvc": "^1.33.0",
     "lucide-react": "^1.61.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
+  },
+  "optionalDependencies": {
+    "@rolldown/binding-win32-x64-msvc": "^1.2.15",
+    "lightningcss-win32-x64-msvc": "^1.33.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
