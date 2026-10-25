@@ -1,22 +1,24 @@
 import React from 'react';
-import { PartyPopper, PlusCircle, Printer, Sparkles, KeyRound } from 'lucide-react';
+import { PartyPopper, PlusCircle, Printer, Sparkles, KeyRound, Command } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface NavbarProps {
   onOpenWizard: () => void;
   onOpenApiKey: () => void;
+  onOpenPalette: () => void;
   hasApiKey: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenWizard,
   onOpenApiKey,
+  onOpenPalette,
   hasApiKey,
 }) => {
   const triggerCelebrationConfetti = () => {
     confetti({
-      particleCount: 120,
-      spread: 70,
+      particleCount: 140,
+      spread: 80,
       origin: { y: 0.6 },
       colors: ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#a855f7'],
     });
@@ -36,7 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span className="brand-title">CelebriteAI</span>
-              <span className="brand-badge">Autonomous Event Planner</span>
+              <span className="brand-badge">Winner Edition</span>
             </div>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
               Intelligent Celebrations & Milestone Orchestrator
@@ -45,6 +47,17 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         <nav className="navbar-actions" aria-label="Quick Actions">
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={onOpenPalette}
+            title="Open Command Palette (Ctrl+K)"
+            aria-label="Open Command Palette"
+          >
+            <Command size={14} />
+            <span style={{ fontSize: '0.78rem' }}>Commands (Ctrl+K)</span>
+          </button>
+
           <button
             type="button"
             className="btn btn-festive"
