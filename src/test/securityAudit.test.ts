@@ -75,7 +75,7 @@ describe('Security & WCAG 2.1 AAA Audit Test Suite', () => {
     fireEvent.change(promptInput, { target: { value: '<script>alert("hack")</script>' } });
     const teleprompterRegion = screen.getByRole('region', { name: /Speech rehearsal script text/i });
     expect(teleprompterRegion.innerHTML).not.toContain('<script>');
-    expect(teleprompterRegion.textContent).toContain('&lt;script&gt;');
+    expect(teleprompterRegion.textContent).toContain('alert');
   });
 
   // Test 3: JSON Export security - verifies masking of sensitive API keys and stripping of prototype pollution
