@@ -10,6 +10,7 @@ import {
   PieChart,
 } from 'lucide-react';
 import { EventPlan } from '../types';
+import { CountdownTimer } from './CountdownTimer';
 
 interface EventHeaderProps {
   plan: EventPlan;
@@ -22,7 +23,7 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ plan }) => {
 
   return (
     <section className="event-header-card" aria-label="Event Overview">
-      <div className="event-header-top">
+      <div className="event-header-top" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
         <div className="event-headline">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             <span className="badge badge-info" style={{ textTransform: 'capitalize' }}>
@@ -48,6 +49,15 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ plan }) => {
               {plan.venueType} Venue
             </span>
           </div>
+        </div>
+
+        {/* Live Event Countdown Clock */}
+        <div style={{ minWidth: '300px' }}>
+          <CountdownTimer
+            eventDate={plan.eventDate}
+            startTime={plan.startTime}
+            eventTitle={plan.title}
+          />
         </div>
       </div>
 

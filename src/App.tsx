@@ -25,6 +25,9 @@ import { CommandPalette } from './components/CommandPalette';
 import { EventWizardModal } from './components/EventWizardModal';
 import { AIAssistantDrawer } from './components/AIAssistantDrawer';
 import { ApiKeyModal } from './components/ApiKeyModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { useEventPersistence } from './hooks/useEventPersistence';
+import { useAnnouncer } from './hooks/useAnnouncer';
 import { EventPlan, BudgetCategory, TimelineItem, Guest, MenuItem, VendorItem } from './types';
 import { createDefaultEventPlan, calculateBudgetBreakdown } from './services/plannerGenerator';
 
@@ -59,9 +62,11 @@ export const App: React.FC = () => {
     return localStorage.getItem('celebrite_gemini_key') || (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
   });
 
-  useEffect(() => {
-    localStorage.setItem('celebrite_event_plan', JSON.stringify(plan));
-  }, [plan]);
+  // Debounced auto-save hook for maximum efficiency and persistence reliability
+  useEventPersistence(plan, 'celebrite_event_plan', 500);
+
+  // Screen reader announcer for WCAG 2.1 AA live accessibility updates
+  const { announce } = useAnnouncer();
 
   useEffect(() => {
     const handleGlobalKey = (e: KeyboardEvent) => {
@@ -77,30 +82,37 @@ export const App: React.FC = () => {
   const handleSaveApiKey = (key: string) => {
     setApiKey(key);
     localStorage.setItem('celebrite_gemini_key', key);
+    announce('Gemini API key saved successfully');
   };
 
   const handleUpdateBudget = (newCategories: BudgetCategory[]) => {
     setPlan((prev) => ({ ...prev, budgetBreakdown: newCategories }));
+    announce('Budget allocations updated');
   };
 
   const handleUpdateTimeline = (newTimeline: TimelineItem[]) => {
     setPlan((prev) => ({ ...prev, timeline: newTimeline }));
+    announce('Timeline milestones updated');
   };
 
   const handleUpdateGuests = (newGuests: Guest[]) => {
     setPlan((prev) => ({ ...prev, guests: newGuests }));
+    announce('Guest list updated');
   };
 
   const handleUpdateMenu = (newMenu: MenuItem[]) => {
     setPlan((prev) => ({ ...prev, menu: newMenu }));
+    announce('Catering menu updated');
   };
 
   const handleAddMenuItem = (item: MenuItem) => {
     setPlan((prev) => ({ ...prev, menu: [item, ...prev.menu] }));
+    announce(`Added ${item.name} to menu`);
   };
 
   const handleUpdateVendors = (newVendors: VendorItem[]) => {
     setPlan((prev) => ({ ...prev, vendors: newVendors }));
+    announce('Vendor directory updated');
   };
 
   const handleApplyScenario = (newBudget: number) => {
@@ -109,6 +121,7 @@ export const App: React.FC = () => {
       totalBudget: newBudget,
       budgetBreakdown: calculateBudgetBreakdown(prev.eventType, newBudget),
     }));
+    announce(`Applied what-if scenario with budget of ${plan.currency} ${newBudget.toLocaleString()}`);
   };
 
   const handlePaletteAction = (actionId: string) => {
@@ -144,67 +157,76 @@ export const App: React.FC = () => {
         hasApiKey={Boolean(apiKey)}
       />
 
-      <main className="main-content" role="main">
-        <EventHeader plan={plan} />
+      <main className="main-content" role="main" id="main-content">
+        <ErrorBoundary>
+          <EventHeader plan={plan} />
 
-        {/* Dietary audit notification banner */}
-        <DietaryAuditBanner plan={plan} onAddMenuItem={handleAddMenuItem} />
+          {/* Dietary audit notification banner */}
+          <DietaryAuditBanner plan={plan} onAddMenuItem={handleAddMenuItem} />
 
-        {/* Tab Navigation */}
-        <nav className="tab-navigation" aria-label="Event Planning Modules">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                className={`tab-btn ${isActive ? 'active' : ''}`}
-                onClick={() => setActiveTab(tab.id as ActiveTab)}
-                aria-selected={isActive}
-                role="tab"
-              >
-                <Icon size={18} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </nav>
+          {/* Tab Navigation */}
+          <nav className="tab-navigation" aria-label="Event Planning Modules">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  id={`tab-${tab.id}`}
+                  type="button"
+                  className={`tab-btn ${isActive ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveTab(tab.id as ActiveTab);
+                    announce(`Switched to ${tab.label} module`);
+                  }}
+                  aria-selected={isActive}
+                  aria-controls={`panel-${tab.id}`}
+                  role="tab"
+                >
+                  <Icon size={18} aria-hidden="true" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
 
-        {/* Module Content Views */}
-        <div role="tabpanel" id={`panel-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>
-          {activeTab === 'budget' && (
-            <BudgetManager plan={plan} onUpdateBudget={handleUpdateBudget} />
-          )}
+          {/* Module Content Views */}
+          <div role="tabpanel" id={`panel-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>
+            <ErrorBoundary>
+              {activeTab === 'budget' && (
+                <BudgetManager plan={plan} onUpdateBudget={handleUpdateBudget} />
+              )}
 
-          {activeTab === 'timeline' && (
-            <TimelineRunOfShow plan={plan} onUpdateTimeline={handleUpdateTimeline} />
-          )}
+              {activeTab === 'timeline' && (
+                <TimelineRunOfShow plan={plan} onUpdateTimeline={handleUpdateTimeline} />
+              )}
 
-          {activeTab === 'theme' && (
-            <ThemeStudio plan={plan} />
-          )}
+              {activeTab === 'theme' && (
+                <ThemeStudio plan={plan} />
+              )}
 
-          {activeTab === 'menu' && (
-            <CateringMenu plan={plan} onUpdateMenu={handleUpdateMenu} />
-          )}
+              {activeTab === 'menu' && (
+                <CateringMenu plan={plan} onUpdateMenu={handleUpdateMenu} />
+              )}
 
-          {activeTab === 'guests' && (
-            <GuestTracker plan={plan} onUpdateGuests={handleUpdateGuests} />
-          )}
+              {activeTab === 'guests' && (
+                <GuestTracker plan={plan} onUpdateGuests={handleUpdateGuests} />
+              )}
 
-          {activeTab === 'vendors' && (
-            <VendorDirectory plan={plan} onUpdateVendors={handleUpdateVendors} />
-          )}
+              {activeTab === 'vendors' && (
+                <VendorDirectory plan={plan} onUpdateVendors={handleUpdateVendors} />
+              )}
 
-          {activeTab === 'speech' && (
-            <SpeechStudio plan={plan} />
-          )}
+              {activeTab === 'speech' && (
+                <SpeechStudio plan={plan} />
+              )}
 
-          {activeTab === 'scenarios' && (
-            <ScenarioSimulator plan={plan} onApplyScenario={handleApplyScenario} />
-          )}
-        </div>
+              {activeTab === 'scenarios' && (
+                <ScenarioSimulator plan={plan} onApplyScenario={handleApplyScenario} />
+              )}
+            </ErrorBoundary>
+          </div>
+        </ErrorBoundary>
       </main>
 
       {/* Floating AI Assistant Drawer */}
@@ -224,6 +246,7 @@ export const App: React.FC = () => {
         onPlanCreated={(newPlan) => {
           setPlan(newPlan);
           setActiveTab('budget');
+          announce(`Created new event plan: ${newPlan.title}`);
         }}
       />
 

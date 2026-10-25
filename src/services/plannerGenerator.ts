@@ -477,6 +477,52 @@ Provide a highly actionable, structured, empathetic, and innovative response tai
   }
 
   // Robust Contextual Heuristic AI Engine
+  if (query.includes('entertainment') || query.includes('game') || query.includes('music') || query.includes('entertain') || query.includes('activity')) {
+    return `🎉 **Entertainment & Engagement Blueprint**:
+- **Interactive Icebreaker**: Place personalized trivia cards at each dining table ("How well do you know the story?").
+- **Live Atmosphere**: Kick off cocktail hour with ${currentPlan.themePalette.curatedMusicPlaylists[0] || 'Acoustic Bossa Nova'}, then ramp up energy with ${currentPlan.themePalette.curatedMusicPlaylists[1] || 'Nu-Disco Funky Grooves'}.
+- **Memorable Highlight**: Create a 60-second synchronized toast with personalized sparklers or glow wands for an unforgettable photo climax!`;
+  }
+
+  if (query.includes('theme') || query.includes('decor') || query.includes('color') || query.includes('vibe')) {
+    return `🎨 **Theme & Styling Guide for ${currentPlan.themePalette.name}**:
+- **Palette**: Primary (${currentPlan.themePalette.primary}), Secondary (${currentPlan.themePalette.secondary}), Accent (${currentPlan.themePalette.accent}).
+- **Lighting Direction**: ${currentPlan.themePalette.lightingStyle}
+- **Vibe Suggestion**: Incorporate tactile elements like textured velvet table runners, warm amber candle cloches, and customized signature stationery.
+- **Photo Opportunity**: Create an interactive photowall with a neon monogram slogan and floral foliage to drive social media sharing.`;
+  }
+
+  if (query.includes('venue') || query.includes('location') || query.includes('site')) {
+    return `🏛️ **Venue Selection & Layout Guidance for ${currentPlan.venueType} Venue**:
+- **Capacity & Flow**: Verify comfortable circulation for ${currentPlan.guestCount} guests (minimum 15-20 sq ft per guest for dining and dancing).
+- **Load-in & Curfew Rules**: Confirm vendor setup window (ideally 3 hours before guest arrival) and municipal sound curfew.
+- **Acoustic & Power Checks**: Ensure dedicated 20-amp circuits for the sound system and food warming stations to prevent breaker trips.
+- **Accessibility Check**: Ensure barrier-free ramp access, well-lit parking, and ADA-compliant restrooms.`;
+  }
+
+  if (query.includes('speech') || query.includes('toast') || query.includes('talk') || query.includes('teleprompter')) {
+    return `🎙️ **Master Speech & Toast Delivery Blueprint**:
+- **The Golden 3-Minute Rule**: Speeches peak in emotional resonance between 2.5 and 4 minutes (approximately 350-500 words spoken at a relaxed cadence).
+- **Narrative Arc**: Start with a warm hook/greeting, share one vivid heartfelt or humorous anecdote, articulate genuine appreciation, and finish with a resounding glass-raising toast.
+- **Delivery Tip**: Maintain eye contact with the honoree for 70% of the speech, and pause for 2 full beats after punchlines for natural laughter.
+- **Microphone Etiquette**: Hold the microphone 2 inches below the chin at a 45-degree angle; do not tap or shout into the grille.`;
+  }
+
+  if (query.includes('invitation') || query.includes('invite') || query.includes('card')) {
+    return `💌 **Invitation & Stationery Strategy**:
+- **Dispatch Timeline**: Digital save-the-dates should go out 8-12 weeks in advance; formal invitations with RSVP deadlines 4-6 weeks before ${currentPlan.eventDate}.
+- **Essential Inclusions**: Clear dress code/palette inspiration (${currentPlan.themePalette.name}), parking instructions, dietary RSVP deadline, and gifting preferences.
+- **Tone Alignment**: Use CelebriteAI's 4 distinct tones—Elegant for formal galas, Playful for celebratory gatherings, Formal for executive galas, or Poetic for romantic milestone celebrations!`;
+  }
+
+  if (query.includes('vendor') || query.includes('supplier') || query.includes('photographer') || query.includes('caterer')) {
+    return `🤝 **Vendor Contracting & Negotiation Masterclass**:
+- **Package Bundling**: Negotiate bundled packages (e.g. DJ + ambient uplighting, or Lead Photographer + drone footage) to capture 10-15% margin discounts.
+- **Contract Clauses**: Always include a service replacement guarantee clause in case of primary artist illness, and define overtime rates in advance.
+- **Meals & Hospitality**: Vendor meals should be provided during guest dinner so staff are refreshed and ready for high-energy post-dinner program milestones.
+- **Payment Schedule**: Maintain standard milestones—30% deposit upon booking, 40% midway, and the final 30% after successful milestone completion.`;
+  }
+
   if (query.includes('budget') || query.includes('cost') || query.includes('money') || query.includes('cut')) {
     const perGuest = Math.round(currentPlan.totalBudget / (currentPlan.guestCount || 1));
     return `💡 **Budget Optimization Strategy for ${currentPlan.title}**:
@@ -494,22 +540,7 @@ Provide a highly actionable, structured, empathetic, and innovative response tai
 - **Vendor Briefing**: Schedule a 5-minute huddle with the MC and Head Waiter 30 minutes prior to doors opening.`;
   }
 
-  if (query.includes('theme') || query.includes('decor') || query.includes('color') || query.includes('vibe')) {
-    return `🎨 **Theme & Styling Guide for ${currentPlan.themePalette.name}**:
-- **Palette**: Primary (${currentPlan.themePalette.primary}), Secondary (${currentPlan.themePalette.secondary}), Accent (${currentPlan.themePalette.accent}).
-- **Lighting Direction**: ${currentPlan.themePalette.lightingStyle}
-- **Vibe Suggestion**: Incorporate tactile elements like textured velvet table runners, warm amber candle cloches, and customized signature stationery.
-- **Photo Opportunity**: Create an interactive photowall with a neon monogram slogan and floral foliage to drive social media sharing.`;
-  }
-
-  if (query.includes('game') || query.includes('activity') || query.includes('entertain') || query.includes('music')) {
-    return `🎉 **Entertainment & Engagement Blueprint**:
-- **Interactive Icebreaker**: Place personalized trivia cards at each dining table ("How well do you know the story?").
-- **Live Atmosphere**: Kick off cocktail hour with ${currentPlan.themePalette.curatedMusicPlaylists[0] || 'Acoustic Bossa Nova'}, then ramp up energy with ${currentPlan.themePalette.curatedMusicPlaylists[1] || 'Nu-Disco Funky Grooves'}.
-- **Memorable Highlight**: Create a 60-second synchronized toast with personalized sparklers or glow wands for an unforgettable photo climax!`;
-  }
-
-  if (query.includes('rsvp') || query.includes('guest') || query.includes('invitation') || query.includes('dietary')) {
+  if (query.includes('rsvp') || query.includes('guest') || query.includes('dietary')) {
     const confirmedCount = currentPlan.guests.filter((g) => g.rsvpStatus === 'confirmed').length;
     const pendingCount = currentPlan.guests.filter((g) => g.rsvpStatus === 'pending').length;
     return `📋 **Guest & RSVP Management Summary**:

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { UtensilsCrossed, Plus, Sparkles, Check } from 'lucide-react';
+import { UtensilsCrossed, Plus, Sparkles } from 'lucide-react';
 import { EventPlan, MenuItem } from '../types';
+import { DietaryAuditBanner } from './DietaryAuditBanner';
 
 interface CateringMenuProps {
   plan: EventPlan;
@@ -61,10 +62,19 @@ export const CateringMenu: React.FC<CateringMenuProps> = ({
           type="button"
           className="btn btn-primary btn-sm"
           onClick={() => setShowAddModal(true)}
+          aria-label="Add custom dish to catering menu"
         >
           <Plus size={16} />
           <span>Add Custom Dish</span>
         </button>
+      </div>
+
+      {/* Embedded Dietary Audit for contextual awareness */}
+      <div style={{ marginBottom: '20px' }}>
+        <DietaryAuditBanner
+          plan={plan}
+          onAddMenuItem={(dish) => onUpdateMenu([...plan.menu, dish])}
+        />
       </div>
 
       {/* Courses display */}
@@ -74,7 +84,11 @@ export const CateringMenu: React.FC<CateringMenuProps> = ({
           if (items.length === 0) return null;
 
           return (
-            <div key={c}>
+            <section
+              key={c}
+              role="region"
+              aria-label={`${c} course selection`}
+            >
               <h3
                 style={{
                   fontSize: '1.1rem',
@@ -149,7 +163,7 @@ export const CateringMenu: React.FC<CateringMenuProps> = ({
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
           );
         })}
       </div>

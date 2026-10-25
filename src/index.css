@@ -616,3 +616,115 @@ textarea:focus-visible {
     color: #111827 !important;
   }
 }
+
+
+/* ==========================================================================
+   Accessibility & WCAG 2.1 AA Enhancement Layer
+   ========================================================================== */
+
+/* Enhanced Universal Focus Indicators */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible,
+[role="dialog"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--primary, #6366f1) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.4) !important;
+}
+
+/* Skip to Main Content Navigation */
+.skip-to-content {
+  position: absolute;
+  top: -120px;
+  left: 20px;
+  background: #6366f1;
+  color: #ffffff !important;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  z-index: 100000;
+  text-decoration: none;
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.5);
+  border: 2px solid #ffffff;
+  transition: top 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.skip-to-content:focus {
+  top: 20px;
+}
+
+/* Screen Reader Only Utility */
+.sr-only,
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* High Contrast Media Query Support */
+@media (prefers-contrast: high) {
+  :root {
+    --bg: #000000;
+    --bg-card: #090d16;
+    --bg-surface: #0f172a;
+    --border: #cbd5e1;
+    --text-main: #ffffff;
+    --text-muted: #e2e8f0;
+  }
+
+  .section-card,
+  .event-header-card,
+  .stat-pill,
+  .tab-btn,
+  .navbar {
+    border: 2px solid #ffffff !important;
+  }
+
+  .btn {
+    border: 2px solid currentColor !important;
+    font-weight: 800 !important;
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible {
+    outline: 4px solid #ffffff !important;
+    outline-offset: 4px !important;
+  }
+}
+
+/* Reduced Motion Mode */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Live Announcement Toast Container */
+.live-announcements-region {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
