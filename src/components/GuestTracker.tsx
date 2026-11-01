@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { EventPlan, Guest, RSVPStatus } from '../types';
 import { useGuestManager } from '../hooks/useGuestManager';
+import { validateEmail } from '../services/security';
 
 interface GuestTrackerProps {
   plan: EventPlan;
@@ -42,6 +43,7 @@ export const GuestTracker: React.FC<GuestTrackerProps> = ({
   const [dietary, setDietary] = useState('Standard');
   const [plusOnes, setPlusOnes] = useState(0);
   const [tableNumber, setTableNumber] = useState<string>('1');
+  const [formErrors, setFormErrors] = useState<{ name?: string; email?: string }>({});
 
   const handleStatusChange = (id: string, newStatus: RSVPStatus) => {
     const targetGuest = guests.find((g) => g.id === id);
@@ -52,11 +54,20 @@ export const GuestTracker: React.FC<GuestTrackerProps> = ({
 
   const handleAddGuest = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name) return;
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    const errors: { name?: string; email?: string } = {};
+    if (trimmedName.length < 2 || trimmedName.length > 80) errors.name = 'Enter a name between 2 and 80 characters.';
+    if (trimmedEmail && !validateEmail(trimmedEmail)) errors.email = `"${trimmedEmail}" is not a valid email address.`;
+    setFormErrors(errors);
+    if (errors.name || errors.email) {
+      setAnnouncement(Object.values(errors).join(' '));
+      return;
+    }
 
     addGuest({
-      name,
-      email: email || `${name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
+      name: trimmedName,
+      email: trimmedEmail || `${trimmedName.toLowerCase().replace(/\s+/g, '.')}@example.com`,
       dietary,
       plusOnes,
       tableNumber: parseInt(tableNumber, 10) || null,
@@ -68,6 +79,7 @@ export const GuestTracker: React.FC<GuestTrackerProps> = ({
     setDietary('Standard');
     setPlusOnes(0);
     setShowAddModal(false);
+    setAnnouncement(`${trimmedName} added to the guest list.`);
   };
 
   const exportCSV = () => {
@@ -127,7 +139,10 @@ export const GuestTracker: React.FC<GuestTrackerProps> = ({
           <button
             type="button"
             className="btn btn-primary btn-sm"
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              setFormErrors({});
+              setShowAddModal(true);
+            }}
           >
             <UserPlus size={16} />
             <span>Add Guest</span>
@@ -283,7 +298,7 @@ export const GuestTracker: React.FC<GuestTrackerProps> = ({
             <h3 id="add-guest-title" style={{ marginBottom: '16px', fontSize: '1.2rem', fontWeight: 700 }}>
               Add Attendee
             </h3>
-            <form onSubmit={handleAddGuest}>
+            <form onSubmit={handleAddGuest} noValidate>
               <div className="form-group">
                 <label className="form-label" htmlFor="g-name">
                   Full Name
@@ -293,10 +308,18 @@ export const GuestTracker: React.FC<GuestTrackerProps> = ({
                   type="text"
                   className="form-input"
                   required
+                  maxLength={80}
                   placeholder="e.g. Maya Lin"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  aria-invalid={Boolean(formErrors.name)}
+                  aria-describedby={formErrors.name ? 'g-name-error' : undefined}
                 />
+                {formErrors.name && (
+                  <p id="g-name-error" role="alert" className="field-error">
+                    {formErrors.name}
+                  </p>
+                )}
               </div>
 
               <div className="form-group">
@@ -308,9 +331,17 @@ export const GuestTracker: React.FC<GuestTrackerProps> = ({
                   type="email"
                   className="form-input"
                   placeholder="maya.lin@example.com"
+                  maxLength={254}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  aria-invalid={Boolean(formErrors.email)}
+                  aria-describedby={formErrors.email ? 'g-email-error' : undefined}
                 />
+                {formErrors.email && (
+                  <p id="g-email-error" role="alert" className="field-error">
+                    {formErrors.email}
+                  </p>
+                )}
               </div>
 
               <div className="form-row">

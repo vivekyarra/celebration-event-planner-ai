@@ -5,7 +5,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-8.3-646CFF?logo=vite)](https://vitejs.dev/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
-[![Tests](https://img.shields.io/badge/Vitest-195%20Passed-brightgreen?logo=vitest)](https://vitest.dev/)
+[![Tests](https://img.shields.io/badge/Vitest-198%20Passed-brightgreen?logo=vitest)](https://vitest.dev/)
 [![TypeScript Strict](https://img.shields.io/badge/TypeScript-Strict%20Mode-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Security: CSP](https://img.shields.io/badge/Security-CSP%20Hardened-green)](SECURITY.md)
 [![WCAG 2.1 AA](https://img.shields.io/badge/Accessibility-WCAG%202.1%20AA-success)](https://www.w3.org/WAI/standards-guidelines/wcag/)
@@ -109,7 +109,7 @@
 - Git repository size: **< 150 KiB** (100x below the 10 MB hackathon ceiling).
 
 ### 4. Testing (High Impact)
-- **195 automated tests across 21 Vitest suites**, covering the planner engine, security (XSS, prototype pollution, rate limiting), fuzzing and stress, hooks, components, end-to-end user journeys and accessibility.
+- **198 automated tests across 22 Vitest suites**, covering the planner engine, security (XSS, prototype pollution, rate limiting), fuzzing and stress, hooks, components, end-to-end user journeys and accessibility.
 - **GenAI tests** (`aiCopilot.test.ts`, `copilotDrawer.test.tsx`) mock Gemini to verify the API key travels only in a header, the prompt is grounded in the live plan and fenced as data, responses render safely, and the offline fallback engages on HTTP or network failures.
 - **Quality gates in CI**: `npm run lint` (strict `tsc` + `oxlint --deny-warnings`) and `npm run lint:eslint` (typescript-eslint + react-hooks) must pass before tests, build and deploy.
 - **`npm run stress-test`**: a benchmark that runs the real validators, sanitiser and rate limiter against hostile payloads and audits the bundle size.
@@ -136,7 +136,7 @@ npm install
 # Type check + lint (zero warnings)
 npm run lint && npm run lint:eslint
 
-# Run automated test suites (195 tests)
+# Run automated test suites (198 tests)
 npm test
 
 # Run the stress benchmark

@@ -780,3 +780,5 @@ textarea:focus-visible,
 .copilot-prompt { margin-top: 6px; font-size: 0.7rem; color: var(--text-muted); }
 .copilot-prompt summary { cursor: pointer; color: #a5b4fc; }
 .copilot-prompt pre { white-space: pre-wrap; word-break: break-word; max-height: 180px; overflow: auto; background: rgba(15, 23, 42, 0.6); padding: 8px; border-radius: 8px; margin: 6px 0 0; font-size: 0.68rem; }
+.field-error { margin: 6px 0 0; font-size: 0.78rem; color: #fca5a5; }
+.form-input[aria-invalid='true'] { border-color: #ef4444; }
