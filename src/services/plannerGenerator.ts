@@ -38,7 +38,7 @@ export function calculateBudgetBreakdown(
   eventType: EventType,
   totalBudget: number
 ): BudgetCategory[] {
-  let ratios: { name: string; pct: number; icon: string; recs: string[] }[] = [];
+  let ratios: { name: string; pct: number; icon: string; recs: string[] }[];
 
   switch (eventType) {
     case 'wedding':

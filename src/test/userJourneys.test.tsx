@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { CommandPalette } from '../components/CommandPalette';
 import { ScenarioSimulator } from '../components/ScenarioSimulator';
 import { DietaryAuditBanner } from '../components/DietaryAuditBanner';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { createDefaultEventPlan } from '../services/plannerGenerator';
-import { EventPlan, MenuItem } from '../types';
+import { MenuItem } from '../types';
 
 describe('Task 3: Component Interaction & User Journey Tests', () => {
   describe('1. CommandPalette User Journey & Interactions', () => {

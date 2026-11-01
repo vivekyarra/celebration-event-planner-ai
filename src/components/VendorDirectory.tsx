@@ -15,6 +15,9 @@ interface VendorDirectoryProps {
   onUpdateVendors: (newVendors: VendorItem[]) => void;
 }
 
+/**
+ * Vendor partner directory tracking contacts, estimated costs and contract status.
+ */
 export const VendorDirectory: React.FC<VendorDirectoryProps> = ({
   plan,
   onUpdateVendors,

@@ -8,6 +8,10 @@ interface SpeechStudioProps {
   plan: EventPlan;
 }
 
+/**
+ * Speech and toast rehearsal studio: drafts a speech by role, tone and length, shows it as a
+ * teleprompter and previews it aloud with the Web Speech API.
+ */
 export const SpeechStudio: React.FC<SpeechStudioProps> = ({ plan }) => {
   const [role, setRole] = useState('Best Friend / Co-Host');
   const [tone, setTone] = useState<'humorous' | 'emotional' | 'motivational' | 'poetic'>('humorous');
@@ -41,7 +45,7 @@ export const SpeechStudio: React.FC<SpeechStudioProps> = ({ plan }) => {
 
     const promptInsertion = safePrompt ? `\n\nKey Message Focus: "${safePrompt}"\n` : '';
 
-    let rawSpeech = '';
+    let rawSpeech: string;
 
     if (tone === 'humorous') {
       rawSpeech = `Good evening everyone! For those who don't know me, I'm ${safeRole}. When I was asked to speak tonight at ${safeTitle}, I was told to keep it under ${lengthMin} minutes and to be on my best behavior. Naturally, I promised nothing.

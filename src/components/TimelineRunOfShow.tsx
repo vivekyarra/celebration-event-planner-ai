@@ -4,7 +4,6 @@ import {
   CheckCircle,
   Circle,
   Plus,
-  Calendar,
   Download,
   User,
 } from 'lucide-react';
@@ -16,6 +15,10 @@ interface TimelineRunOfShowProps {
   onUpdateTimeline: (newTimeline: TimelineItem[]) => void;
 }
 
+/**
+ * Minute-by-minute run of show with phase filters, completion tracking, sequencing
+ * warnings (midnight-aware) and iCal export.
+ */
 export const TimelineRunOfShow: React.FC<TimelineRunOfShowProps> = ({
   plan,
   onUpdateTimeline,
@@ -193,7 +196,7 @@ export const TimelineRunOfShow: React.FC<TimelineRunOfShowProps> = ({
 
       {/* Timeline Items List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {filteredTimeline.map((item, index) => {
+        {filteredTimeline.map((item) => {
           const phaseStyle = phaseColors[item.phase] || { bg: 'rgba(255, 255, 255, 0.1)', text: '#ffffff' };
           return (
             <div

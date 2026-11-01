@@ -9,6 +9,10 @@ interface EventWizardModalProps {
   onPlanCreated: (plan: EventPlan) => void;
 }
 
+/**
+ * Accessible modal wizard that collects event details (with inline validation) and
+ * generates a complete plan: budget, run of show, menu, vendors, theme and invitations.
+ */
 export const EventWizardModal: React.FC<EventWizardModalProps> = ({
   isOpen,
   onClose,

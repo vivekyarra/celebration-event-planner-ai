@@ -16,6 +16,10 @@ interface EventHeaderProps {
   plan: EventPlan;
 }
 
+/**
+ * Event summary header: title, type and theme badges, schedule, venue, countdown and the
+ * key metrics (budget, guests, RSVPs, cost per guest, timeline progress).
+ */
 export const EventHeader: React.FC<EventHeaderProps> = ({ plan }) => {
   const confirmedGuests = plan.guests.filter((g) => g.rsvpStatus === 'confirmed').length;
   const costPerGuest = Math.round(plan.totalBudget / (plan.guestCount || 1));

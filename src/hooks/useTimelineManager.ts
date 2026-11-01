@@ -6,7 +6,8 @@
  * @module hooks/useTimelineManager
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useMemo, useCallback } from 'react';
+import { useSyncedState } from './useSyncedState';
 import { TimelineItem, TimelinePhase } from '../types';
 
 export interface TimelineSequencingResult {
@@ -72,6 +73,32 @@ export function parseTimeToMinutes(timeStr: string): number {
   return -1;
 }
 
+/** Milestones before this hour on an evening event are treated as after midnight. */
+const AFTER_MIDNIGHT_CUTOFF = 6 * 60;
+
+/**
+ * Converts a milestone time to minutes on the event's own clock, so an evening
+ * event that runs past midnight (e.g. 11:30 PM -> 1:00 AM) stays in order.
+ *
+ * @param timeStr Milestone time such as "1:00 AM".
+ * @param anchorMinutes Minutes of the event's first milestone, or -1 if unknown.
+ * @returns Minutes from the anchor day's midnight, or -1 if unparsable.
+ */
+export function toEventMinutes(timeStr: string, anchorMinutes: number): number {
+  const minutes = parseTimeToMinutes(timeStr);
+  if (minutes === -1 || anchorMinutes < 12 * 60) return minutes;
+  return minutes < anchorMinutes && minutes < AFTER_MIDNIGHT_CUTOFF ? minutes + 24 * 60 : minutes;
+}
+
+/** Minutes of the first parsable milestone, used as the event-day anchor. */
+function findAnchorMinutes(items: TimelineItem[]): number {
+  for (const item of items) {
+    const minutes = parseTimeToMinutes(item.time);
+    if (minutes !== -1) return minutes;
+  }
+  return -1;
+}
+
 /**
  * Custom React hook for managing master event timelines and run-of-show cues.
  *
@@ -96,12 +123,9 @@ export function useTimelineManager(
   initialTimeline: TimelineItem[] = [],
   onUpdateTimeline?: (timeline: TimelineItem[]) => void
 ): UseTimelineManagerReturn {
-  const [timeline, setTimeline] = useState<TimelineItem[]>(initialTimeline);
+  // Local copy that re-seeds whenever the initialTimeline prop changes externally
+  const [timeline, setTimeline] = useSyncedState<TimelineItem[]>(initialTimeline);
 
-  // Synchronize internal state with external changes
-  useEffect(() => {
-    setTimeline(initialTimeline);
-  }, [initialTimeline]);
 
   const commitUpdate = useCallback(
     (newTimeline: TimelineItem[]) => {
@@ -110,7 +134,7 @@ export function useTimelineManager(
         onUpdateTimeline(newTimeline);
       }
     },
-    [onUpdateTimeline]
+    [onUpdateTimeline, setTimeline]
   );
 
   const addMilestone = useCallback(
@@ -173,9 +197,10 @@ export function useTimelineManager(
   );
 
   const sortChronologically = useCallback(() => {
+    const anchor = findAnchorMinutes(timeline);
     const sorted = [...timeline].sort((a, b) => {
-      const minA = parseTimeToMinutes(a.time);
-      const minB = parseTimeToMinutes(b.time);
+      const minA = toEventMinutes(a.time, anchor);
+      const minB = toEventMinutes(b.time, anchor);
       if (minA === -1 || minB === -1) return 0;
       return minA - minB;
     });
@@ -186,12 +211,13 @@ export function useTimelineManager(
     const outOfOrderIndices: number[] = [];
     const warnings: string[] = [];
 
+    const anchor = findAnchorMinutes(timeline);
     let lastMinutes = -1;
     let lastTimeStr = '';
 
     for (let i = 0; i < timeline.length; i++) {
       const current = timeline[i];
-      const currentMinutes = parseTimeToMinutes(current.time);
+      const currentMinutes = toEventMinutes(current.time, anchor);
 
       if (currentMinutes !== -1) {
         if (lastMinutes !== -1 && currentMinutes < lastMinutes) {

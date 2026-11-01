@@ -6,7 +6,8 @@
  * @module hooks/useGuestManager
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useMemo, useCallback } from 'react';
+import { useSyncedState } from './useSyncedState';
 import { Guest, RSVPStatus } from '../types';
 
 export interface UseGuestManagerReturn {
@@ -61,12 +62,9 @@ export function useGuestManager(
   initialGuests: Guest[] = [],
   onUpdateGuests?: (guests: Guest[]) => void
 ): UseGuestManagerReturn {
-  const [guests, setGuests] = useState<Guest[]>(initialGuests);
+  // Local copy that re-seeds whenever the initialGuests prop changes externally
+  const [guests, setGuests] = useSyncedState<Guest[]>(initialGuests);
 
-  // Synchronize internal state if initialGuests prop changes externally
-  useEffect(() => {
-    setGuests(initialGuests);
-  }, [initialGuests]);
 
   const commitUpdate = useCallback(
     (newGuests: Guest[]) => {
@@ -75,7 +73,7 @@ export function useGuestManager(
         onUpdateGuests(newGuests);
       }
     },
-    [onUpdateGuests]
+    [onUpdateGuests, setGuests]
   );
 
   const addGuest = useCallback(

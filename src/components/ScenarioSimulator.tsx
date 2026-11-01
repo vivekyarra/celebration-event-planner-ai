@@ -1,13 +1,16 @@
 import React from 'react';
-import { Layers, Check, ArrowRight, ShieldCheck, Sparkles, TrendingUp } from 'lucide-react';
+import { Layers, Check, ArrowRight } from 'lucide-react';
 import { EventPlan } from '../types';
-import { calculateBudgetBreakdown } from '../services/plannerGenerator';
 
 interface ScenarioSimulatorProps {
   plan: EventPlan;
   onApplyScenario: (newBudget: number) => void;
 }
 
+/**
+ * What-If budget simulator comparing Conservative, Balanced and Luxury tiers side by side,
+ * with one-click application of a tier to the live plan.
+ */
 export const ScenarioSimulator: React.FC<ScenarioSimulatorProps> = ({
   plan,
   onApplyScenario,

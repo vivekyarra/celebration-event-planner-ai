@@ -6,7 +6,8 @@
  * @module hooks/useVendorManager
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useMemo, useCallback } from 'react';
+import { useSyncedState } from './useSyncedState';
 import { VendorItem, VendorStatus } from '../types';
 
 export interface UseVendorManagerReturn {
@@ -63,12 +64,9 @@ export function useVendorManager(
   initialVendors: VendorItem[] = [],
   onUpdateVendors?: (vendors: VendorItem[]) => void
 ): UseVendorManagerReturn {
-  const [vendors, setVendors] = useState<VendorItem[]>(initialVendors);
+  // Local copy that re-seeds whenever the initialVendors prop changes externally
+  const [vendors, setVendors] = useSyncedState<VendorItem[]>(initialVendors);
 
-  // Synchronize internal state when props update externally
-  useEffect(() => {
-    setVendors(initialVendors);
-  }, [initialVendors]);
 
   const commitUpdate = useCallback(
     (newVendors: VendorItem[]) => {
@@ -77,7 +75,7 @@ export function useVendorManager(
         onUpdateVendors(newVendors);
       }
     },
-    [onUpdateVendors]
+    [onUpdateVendors, setVendors]
   );
 
   const addVendor = useCallback(

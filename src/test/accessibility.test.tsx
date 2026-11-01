@@ -25,7 +25,7 @@ describe('WCAG 2.1 AA Accessibility & Assistive Tech Tests', () => {
   });
 
   it('2. Main content area is accessible with role="main" and skip link destination id', () => {
-    const { container } = render(<App />);
+    render(<App />);
     const mainEl = screen.getByRole('main');
     expect(mainEl).toBeInTheDocument();
     expect(mainEl).toHaveAttribute('id', 'main-content');

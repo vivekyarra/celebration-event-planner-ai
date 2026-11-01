@@ -6,7 +6,8 @@
  * @module hooks/useMenuManager
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useMemo, useCallback } from 'react';
+import { useSyncedState } from './useSyncedState';
 import { MenuItem } from '../types';
 import { sanitizeHtml } from '../services/security';
 
@@ -81,12 +82,9 @@ export function useMenuManager(
   initialMenu: MenuItem[] = [],
   onUpdateMenu?: (newMenu: MenuItem[]) => void
 ): UseMenuManagerReturn {
-  const [menu, setMenu] = useState<MenuItem[]>(initialMenu || []);
+  // Local copy that re-seeds whenever the initialMenu prop changes externally
+  const [menu, setMenu] = useSyncedState<MenuItem[]>(initialMenu);
 
-  // Synchronize internal state when prop changes externally
-  useEffect(() => {
-    setMenu(initialMenu || []);
-  }, [initialMenu]);
 
   const commitUpdate = useCallback(
     (newMenu: MenuItem[]) => {
@@ -95,7 +93,7 @@ export function useMenuManager(
         onUpdateMenu(newMenu);
       }
     },
-    [onUpdateMenu]
+    [onUpdateMenu, setMenu]
   );
 
   const addDish = useCallback(

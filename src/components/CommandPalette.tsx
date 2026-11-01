@@ -21,6 +21,10 @@ interface CommandPaletteProps {
   onSelectAction: (actionId: string) => void;
 }
 
+/**
+ * Ctrl+K command palette with fuzzy filtering and full keyboard navigation for jumping
+ * between modules and triggering global actions.
+ */
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
   isOpen,
   onClose,
@@ -51,10 +55,17 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       a.group.toLowerCase().includes(query.toLowerCase())
   );
 
-  // Reset selected index when query changes or dialog opens
-  useEffect(() => {
+  // Reset selected index when the dialog opens or closes (adjust-state-on-prop-change pattern)
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
     setSelectedIndex(0);
-  }, [query, isOpen]);
+  }
+
+  const handleQueryChange = (value: string) => {
+    setQuery(value);
+    setSelectedIndex(0);
+  };
 
   // Focus input when modal opens
   useEffect(() => {
@@ -180,7 +191,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               fontSize: '0.95rem',
             }}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleQueryChange(e.target.value)}
             onKeyDown={handleInputKeyDown}
           />
           <button

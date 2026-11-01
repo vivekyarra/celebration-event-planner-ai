@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, CheckCircle2, Plus, Sparkles } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 import { EventPlan, MenuItem } from '../types';
 
 interface DietaryAuditBannerProps {
@@ -7,17 +7,30 @@ interface DietaryAuditBannerProps {
   onAddMenuItem: (item: MenuItem) => void;
 }
 
+/** Suggested dish template; its unique id is generated at click time to keep render pure. */
+interface DietaryIssue {
+  type: string;
+  guestCount: number;
+  recommendation: string;
+  idPrefix: string;
+  dishToAdd: Omit<MenuItem, 'id'>;
+}
+
+/** Builds a unique menu item id; invoked only from event handlers, never during render. */
+const createDishId = (prefix: string): string => `${prefix}-${Date.now()}`;
+
 export const DietaryAuditBanner: React.FC<DietaryAuditBannerProps> = ({
   plan,
   onAddMenuItem,
 }) => {
   // Aggregate guest dietary requirements
   const guestDiets = plan.guests.map((g) => g.dietary.toLowerCase());
-  const menuTags = plan.menu
-    .flatMap((m) => m.dietaryTags)
-    .map((t) => t.toLowerCase());
 
-  const issues: { type: string; guestCount: number; recommendation: string; dishToAdd: MenuItem }[] = [];
+  const issues: DietaryIssue[] = [];
+
+  const handleResolve = (issue: DietaryIssue) => {
+    onAddMenuItem({ ...issue.dishToAdd, id: createDishId(issue.idPrefix) });
+  };
 
   const veganCount = guestDiets.filter((d) => d.includes('vegan')).length;
   const hasVeganMains = plan.menu.some(
@@ -29,8 +42,8 @@ export const DietaryAuditBanner: React.FC<DietaryAuditBannerProps> = ({
       type: 'Vegan Main Course Deficiency',
       guestCount: veganCount,
       recommendation: `${veganCount} confirmed/registered guest(s) require Vegan dining, but no dedicated Vegan entree exists in Mains.`,
+      idPrefix: 'auto-vegan',
       dishToAdd: {
-        id: `auto-vegan-${Date.now()}`,
         course: 'mains',
         name: 'Za’atar Charred Cauliflower Steak & Pomegranate Reduction',
         description: 'Served on a bed of warm garlic-tahini purée with toasted pine nuts and micro herbs.',
@@ -50,8 +63,8 @@ export const DietaryAuditBanner: React.FC<DietaryAuditBannerProps> = ({
       type: 'Gluten-Free Dessert Shortfall',
       guestCount: glutenFreeCount,
       recommendation: `${glutenFreeCount} guest(s) require Gluten-Free dietary options for dessert.`,
+      idPrefix: 'auto-gf',
       dishToAdd: {
-        id: `auto-gf-${Date.now()}`,
         course: 'desserts',
         name: 'Flourless Almond & Belgian Dark Chocolate Torte',
         description: 'Decadent cocoa torte finished with raspberry coulis and crushed pistachio.',
@@ -128,7 +141,7 @@ export const DietaryAuditBanner: React.FC<DietaryAuditBannerProps> = ({
             <button
               type="button"
               className="btn btn-primary btn-sm"
-              onClick={() => onAddMenuItem(issue.dishToAdd)}
+              onClick={() => handleResolve(issue)}
               style={{ fontSize: '0.78rem' }}
             >
               <Sparkles size={14} aria-hidden="true" />

@@ -15,6 +15,10 @@ interface BudgetManagerProps {
   onUpdateBudget: (newCategories: BudgetCategory[], newTotalBudget?: number) => void;
 }
 
+/**
+ * Dynamic budget allocator: per-category allocation sliders, actual-spend tracking,
+ * utilisation bars and cost-saving insights, kept summing to the total budget.
+ */
 export const BudgetManager: React.FC<BudgetManagerProps> = ({
   plan,
   onUpdateBudget,

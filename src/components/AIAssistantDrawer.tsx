@@ -1,76 +1,98 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, X, Sparkles, MessageSquare, CornerDownLeft } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Bot, Send, X, Sparkles } from 'lucide-react';
 import { ChatMessage, EventPlan } from '../types';
-import { queryEventCopilot } from '../services/plannerGenerator';
+import { askEventCopilot, CopilotSource, GEMINI_MODEL, MAX_QUERY_LENGTH } from '../services/aiCopilot';
+import { MarkdownText } from './MarkdownText';
 
 interface AIAssistantDrawerProps {
   plan: EventPlan;
   apiKey: string;
 }
 
-export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
-  plan,
-  apiKey,
-}) => {
+type CopilotMessage = ChatMessage & { source?: CopilotSource; prompt?: string };
+
+const QUICK_PROMPTS = [
+  'How do I cut 15% from catering?',
+  'What is the ideal run-of-show timing?',
+  'Decor ideas for my theme',
+  'Weather & rain contingency plan',
+];
+
+/** Captures the current moment as a message id suffix and display time. */
+const stamp = () => {
+  const now = new Date();
+  return { ms: now.getTime(), time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+};
+
+export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ plan, apiKey }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'msg-init',
-      sender: 'assistant',
-      text: `Hello! I'm your CelebriteAI Director. I've analyzed your event "${plan.title}" (${plan.guestCount} guests, budget ${plan.currency} ${plan.totalBudget.toLocaleString()}). How can I assist you with budget trimming, run-of-show cues, dietary planning, or invitations today?`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
-
+  const [messages, setMessages] = useState<CopilotMessage[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  // The greeting is derived from the live plan so it never shows a stale event.
+  const greeting = `Hello! I'm your CelebriteAI Director. I've analyzed "${plan.title}" (${plan.guestCount} guests, budget ${plan.currency} ${plan.totalBudget.toLocaleString()}). Ask me about budget trimming, run-of-show cues, dietary planning, or invitations.`;
+  const liveAi = apiKey.trim().length > 10;
+
+  const closeDrawer = useCallback(() => {
+    setIsOpen(false);
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  }, []);
 
   useEffect(() => {
-    if (isOpen) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
 
-  const quickPrompts = [
-    'How do I cut 15% from catering?',
-    'What is the ideal run-of-show timing?',
-    'Decor ideas for my theme',
-    'Weather & rain contingency plan',
-  ];
+  useEffect(() => {
+    if (!isOpen) return;
+    inputRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeDrawer();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen, closeDrawer]);
 
   const handleSend = async (queryText?: string) => {
-    const textToSend = queryText || input;
+    const textToSend = (queryText ?? input).slice(0, MAX_QUERY_LENGTH);
     if (!textToSend.trim() || loading) return;
 
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      sender: 'user',
-      text: textToSend,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
+    const sentAt = stamp();
+    setMessages((prev) => [
+      ...prev,
+      { id: `user-${sentAt.ms}`, sender: 'user', text: textToSend, timestamp: sentAt.time },
+    ]);
     setInput('');
     setLoading(true);
 
     try {
-      const reply = await queryEventCopilot(textToSend, plan, apiKey);
-      const assistantMsg: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        sender: 'assistant',
-        text: reply,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
-    } catch (err) {
-      const errorMsg: ChatMessage = {
-        id: `err-${Date.now()}`,
-        sender: 'assistant',
-        text: 'Apologies, I encountered a temporary processing glitch. Please feel free to ask again!',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages((prev) => [...prev, errorMsg]);
+      const reply = await askEventCopilot(textToSend, plan, apiKey);
+      const repliedAt = stamp();
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${repliedAt.ms}`,
+          sender: 'assistant',
+          text: reply.text,
+          source: reply.source,
+          prompt: reply.prompt,
+          timestamp: repliedAt.time,
+        },
+      ]);
+    } catch {
+      const failedAt = stamp();
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `err-${failedAt.ms}`,
+          sender: 'assistant',
+          text: 'Apologies, I encountered a temporary processing glitch. Please feel free to ask again!',
+          timestamp: failedAt.time,
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -78,136 +100,85 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
 
   return (
     <>
-      {/* Floating Trigger Button */}
       {!isOpen && (
         <button
           type="button"
           className="floating-copilot-trigger"
+          ref={triggerRef}
           onClick={() => setIsOpen(true)}
           aria-label="Open AI Event Copilot"
         >
-          <Bot size={20} />
+          <Bot size={20} aria-hidden="true" />
           <span>Ask Event Copilot</span>
-          <span
-            style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              background: '#34d399',
-              boxShadow: '0 0 6px #34d399',
-            }}
-          />
+          <span className="copilot-status-dot" aria-hidden="true" />
         </button>
       )}
 
-      {/* Floating Drawer / Chat window */}
       {isOpen && (
         <aside className="chat-drawer" aria-label="AI Event Planning Assistant Chat">
           <div className="chat-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: 'var(--radius-sm)',
-                  background: 'linear-gradient(135deg, #6366f1, #a855f7)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
+            <div className="copilot-identity">
+              <div className="copilot-avatar" aria-hidden="true">
                 <Bot size={18} />
               </div>
               <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div className="copilot-title">
                   <span>CelebriteBot Copilot</span>
-                  <span className="badge badge-success" style={{ fontSize: '0.65rem', padding: '1px 6px' }}>
-                    {apiKey ? 'Gemini 1.5' : 'Context Engine'}
+                  <span className="badge badge-success copilot-badge">
+                    {liveAi ? `Live ${GEMINI_MODEL}` : 'Offline Engine'}
                   </span>
                 </div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                  Autonomous Event Advisor
-                </div>
+                <div className="copilot-subtitle">Autonomous Event Advisor</div>
               </div>
             </div>
 
-            <button
-              type="button"
-              className="modal-close-btn"
-              onClick={() => setIsOpen(false)}
-              aria-label="Close Chat"
-            >
+            <button type="button" className="modal-close-btn" onClick={closeDrawer} aria-label="Close Chat">
               <X size={18} />
             </button>
           </div>
 
-          {/* Quick Prompts bar */}
-          <div
-            style={{
-              padding: '8px 12px',
-              background: 'rgba(15, 23, 42, 0.4)',
-              borderBottom: '1px solid var(--border)',
-              display: 'flex',
-              gap: '6px',
-              overflowX: 'auto',
-            }}
-          >
-            {quickPrompts.map((q) => (
-              <button
-                key={q}
-                type="button"
-                onClick={() => handleSend(q)}
-                style={{
-                  padding: '4px 10px',
-                  fontSize: '0.72rem',
-                  borderRadius: 'var(--radius-full)',
-                  background: 'rgba(99, 102, 241, 0.12)',
-                  color: '#c7d2fe',
-                  border: '1px solid rgba(99, 102, 241, 0.25)',
-                  whiteSpace: 'nowrap',
-                  cursor: 'pointer',
-                }}
-              >
+          <div className="copilot-quick-prompts" role="group" aria-label="Suggested questions">
+            {QUICK_PROMPTS.map((q) => (
+              <button key={q} type="button" className="copilot-chip" onClick={() => handleSend(q)} disabled={loading}>
                 {q}
               </button>
             ))}
           </div>
 
-          {/* Chat Messages */}
-          <div className="chat-messages">
+          <div className="chat-messages" role="log" aria-live="polite" aria-busy={loading}>
+            <div className="chat-bubble chat-bubble-assistant">
+              <MarkdownText text={greeting} />
+            </div>
             {messages.map((m) => (
               <div
                 key={m.id}
-                className={`chat-bubble ${
-                  m.sender === 'assistant' ? 'chat-bubble-assistant' : 'chat-bubble-user'
-                }`}
+                className={`chat-bubble ${m.sender === 'assistant' ? 'chat-bubble-assistant' : 'chat-bubble-user'}`}
               >
-                <div style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
-                <div
-                  style={{
-                    fontSize: '0.68rem',
-                    color: m.sender === 'assistant' ? 'var(--text-dim)' : 'rgba(255,255,255,0.7)',
-                    marginTop: '4px',
-                    textAlign: 'right',
-                  }}
-                >
-                  {m.timestamp}
-                </div>
+                {m.sender === 'assistant' ? <MarkdownText text={m.text} /> : <div className="chat-user-text">{m.text}</div>}
+                {m.source === 'gemini' && <span className="copilot-source">✨ Generated by Gemini</span>}
+                {m.prompt && (
+                  <details className="copilot-prompt">
+                    <summary>View prompt sent to Gemini</summary>
+                    <pre>{m.prompt}</pre>
+                  </details>
+                )}
+                {m.source === 'offline' && (
+                  <span className="copilot-source copilot-source-offline">Offline engine · add a Gemini key for live AI</span>
+                )}
+                <div className="chat-timestamp">{m.timestamp}</div>
               </div>
             ))}
             {loading && (
               <div className="chat-bubble chat-bubble-assistant">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)' }}>
-                  <Sparkles size={14} className="spin-slow" />
-                  <span>Synthesizing event recommendations...</span>
+                <div className="copilot-thinking">
+                  <Sparkles size={14} className="spin-slow" aria-hidden="true" />
+                  <span>{liveAi ? 'Gemini is drafting a plan-aware answer...' : 'Synthesizing event recommendations...'}</span>
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Chat Input form */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -217,10 +188,11 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
           >
             <input
               type="text"
-              className="form-input"
-              style={{ fontSize: '0.85rem', padding: '8px 12px' }}
+              className="form-input copilot-input"
               placeholder="Ask about budget, games, dietary, schedule..."
+              ref={inputRef}
               value={input}
+              maxLength={MAX_QUERY_LENGTH}
               onChange={(e) => setInput(e.target.value)}
               aria-label="Message to event planner copilot"
             />
@@ -230,7 +202,7 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
               disabled={loading || !input.trim()}
               aria-label="Send message"
             >
-              <Send size={14} />
+              <Send size={14} aria-hidden="true" />
             </button>
           </form>
         </aside>

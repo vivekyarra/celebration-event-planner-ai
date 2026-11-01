@@ -10,6 +10,10 @@ interface NavbarProps {
   saveStatus?: 'saving' | 'saved' | 'idle' | 'error';
 }
 
+/**
+ * Top navigation bar with save status and quick actions: command palette, confetti, new
+ * celebration, printable dossier and AI settings.
+ */
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenWizard,
   onOpenApiKey,
@@ -17,18 +21,22 @@ export const Navbar: React.FC<NavbarProps> = ({
   hasApiKey,
   saveStatus = 'idle',
 }) => {
-  const [showSavedBadge, setShowSavedBadge] = useState(false);
+  // Whether the transient "saved" badge has timed out for the current save cycle.
+  const [badgeExpired, setBadgeExpired] = useState(false);
+  const [prevSaveStatus, setPrevSaveStatus] = useState(saveStatus);
+
+  // Re-arm the badge whenever the save status transitions (adjust-state-on-prop-change pattern).
+  if (saveStatus !== prevSaveStatus) {
+    setPrevSaveStatus(saveStatus);
+    setBadgeExpired(false);
+  }
+
+  const showSavedBadge = saveStatus === 'saved' && !badgeExpired;
 
   useEffect(() => {
-    if (saveStatus === 'saved') {
-      setShowSavedBadge(true);
-      const timer = setTimeout(() => {
-        setShowSavedBadge(false);
-      }, 2000);
-      return () => clearTimeout(timer);
-    } else {
-      setShowSavedBadge(false);
-    }
+    if (saveStatus !== 'saved') return;
+    const timer = setTimeout(() => setBadgeExpired(true), 2000);
+    return () => clearTimeout(timer);
   }, [saveStatus]);
 
   const triggerCelebrationConfetti = () => {
@@ -154,7 +162,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             className={`btn ${hasApiKey ? 'btn-secondary' : 'btn-outline'}`}
             onClick={onOpenApiKey}
             aria-label="Gemini API Key configuration"
-            title="Configure Gemini 1.5 Flash API Key"
+            title="Configure Gemini 2.5 Flash API Key"
           >
             <KeyRound size={16} color={hasApiKey ? '#34d399' : undefined} aria-hidden="true" />
             <span style={{ fontSize: '0.78rem' }}>{hasApiKey ? 'Gemini Live' : 'AI Settings'}</span>

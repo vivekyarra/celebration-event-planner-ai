@@ -24,7 +24,7 @@ describe('Task 3: Full End-to-End Simulation Workflows', () => {
 
     window.speechSynthesis = {
       speak: vi.fn((utterance: SpeechSynthesisUtterance) => {
-        if (utterance.onstart) utterance.onstart(new Event('start') as any);
+        if (utterance.onstart) utterance.onstart(new Event('start') as SpeechSynthesisEvent);
       }),
       cancel: vi.fn(),
       pause: vi.fn(),
@@ -39,18 +39,22 @@ describe('Task 3: Full End-to-End Simulation Workflows', () => {
       speaking: false,
     } as unknown as SpeechSynthesis;
 
-    function MockUtterance(this: any, text: string) {
-      this.text = text;
-      this.rate = 1;
-      this.pitch = 1;
-      this.volume = 1;
-      this.lang = 'en-US';
-      this.voice = null;
-      this.onstart = null;
-      this.onend = null;
-      this.onerror = null;
+    class MockUtterance {
+      text: string;
+      rate = 1;
+      pitch = 1;
+      volume = 1;
+      lang = 'en-US';
+      voice: SpeechSynthesisVoice | null = null;
+      onstart: (() => void) | null = null;
+      onend: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+
+      constructor(text: string) {
+        this.text = text;
+      }
     }
-    globalThis.SpeechSynthesisUtterance = MockUtterance as any;
+    globalThis.SpeechSynthesisUtterance = MockUtterance as unknown as typeof SpeechSynthesisUtterance;
   });
 
   afterEach(() => {

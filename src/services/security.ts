@@ -181,6 +181,7 @@ export class ClientRateLimiter {
  * Backward-compatible alias for ClientRateLimiter.
  */
 export const RateLimiter = ClientRateLimiter;
+export type RateLimiter = ClientRateLimiter;
 
 /**
  * Factory helper function to instantiate a ClientRateLimiter.
@@ -273,7 +274,8 @@ export function sanitizeHtml(input: string): string {
 }
 
 /**
- * Strips all HTML markup tags from a string.
+ * Strips all HTML markup tags from a string, including unterminated trailing
+ * tags (e.g. `"<script"`), so partial markup cannot survive sanitization.
  *
  * @param input String potentially containing HTML tags.
  * @returns Clean string with HTML tags removed.
@@ -285,7 +287,7 @@ export function sanitizeHtml(input: string): string {
  */
 export function stripHtml(input: string): string {
   if (!input || typeof input !== 'string') return '';
-  return input.replace(/<[^>]*>/g, '').trim();
+  return input.replace(/<[^>]*>?/g, '').trim();
 }
 
 /**
@@ -409,12 +411,32 @@ export function isWcagCompliant(
 }
 
 /**
+ * Returns true for C0 (U+0000-U+001F), DEL (U+007F) and C1 (U+0080-U+009F) control characters.
+ */
+function isControlCharCode(code: number): boolean {
+  return code <= 0x1f || (code >= 0x7f && code <= 0x9f);
+}
+
+/**
+ * Removes control characters and all whitespace so obfuscated schemes such as
+ * "java\tscript:" or "\u0000javascript:" are normalized before protocol checks.
+ */
+function stripControlAndWhitespace(value: string): string {
+  let result = '';
+  for (const ch of value) {
+    if (isControlCharCode(ch.charCodeAt(0)) || /\s/.test(ch)) continue;
+    result += ch;
+  }
+  return result;
+}
+
+/**
  * Sanitizes URLs to prevent javascript: and dangerous script protocol attacks.
  */
 export function sanitizeUrl(url: string): string {
   if (!url || typeof url !== 'string') return 'about:blank';
   const trimmed = url.trim();
-  const sanitized = trimmed.replace(/[\u0000-\u001F\u007F-\u009F\s]/g, '');
+  const sanitized = stripControlAndWhitespace(trimmed);
 
   if (/^(?:javascript|vbscript|data):/i.test(sanitized)) {
     return 'about:blank';
@@ -427,7 +449,7 @@ export function sanitizeUrl(url: string): string {
  */
 export function isSafeUrl(url: string): boolean {
   if (!url || typeof url !== 'string') return false;
-  const sanitized = url.trim().replace(/[\u0000-\u001F\u007F-\u009F\s]/g, '');
+  const sanitized = stripControlAndWhitespace(url.trim());
   return !/^(?:javascript|vbscript|data):/i.test(sanitized);
 }
 

@@ -753,3 +753,30 @@ textarea:focus-visible,
 
   @page { margin: 1.5cm; size: A4; }
 }
+
+/* Copilot markdown answers */
+.markdown-text p { margin: 0 0 6px; }
+.markdown-text ul, .markdown-text ol { margin: 4px 0 6px; padding-left: 18px; }
+.markdown-text li { margin-bottom: 4px; }
+.markdown-text strong { color: #e0e7ff; font-weight: 700; }
+.markdown-text > :last-child { margin-bottom: 0; }
+.copilot-source { display: inline-block; margin-top: 6px; font-size: 0.66rem; padding: 1px 6px; border-radius: 999px; background: rgba(52, 211, 153, 0.15); color: #6ee7b7; }
+.copilot-source-offline { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
+.copilot-status-dot { width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 6px #34d399; }
+.copilot-identity { display: flex; align-items: center; gap: 8px; }
+.copilot-avatar { width: 32px; height: 32px; border-radius: var(--radius-sm); background: linear-gradient(135deg, #6366f1, #a855f7); display: flex; align-items: center; justify-content: center; color: #fff; }
+.copilot-title { font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.copilot-badge { font-size: 0.65rem; padding: 1px 6px; }
+.copilot-subtitle { font-size: 0.72rem; color: var(--text-muted); }
+.copilot-quick-prompts { padding: 8px 12px; background: rgba(15, 23, 42, 0.4); border-bottom: 1px solid var(--border); display: flex; gap: 6px; overflow-x: auto; }
+.copilot-chip { padding: 4px 10px; font-size: 0.72rem; border-radius: var(--radius-full); background: rgba(99, 102, 241, 0.12); color: #c7d2fe; border: 1px solid rgba(99, 102, 241, 0.25); white-space: nowrap; cursor: pointer; }
+.copilot-chip:disabled { opacity: 0.55; cursor: not-allowed; }
+.copilot-chip:focus-visible { outline: 2px solid #a5b4fc; outline-offset: 2px; }
+.chat-user-text { white-space: pre-wrap; }
+.chat-timestamp { font-size: 0.68rem; color: var(--text-dim); margin-top: 4px; text-align: right; }
+.chat-bubble-user .chat-timestamp { color: rgba(255, 255, 255, 0.7); }
+.copilot-thinking { display: flex; align-items: center; gap: 8px; color: var(--text-muted); }
+.copilot-input { font-size: 0.85rem; padding: 8px 12px; }
+.copilot-prompt { margin-top: 6px; font-size: 0.7rem; color: var(--text-muted); }
+.copilot-prompt summary { cursor: pointer; color: #a5b4fc; }
+.copilot-prompt pre { white-space: pre-wrap; word-break: break-word; max-height: 180px; overflow: auto; background: rgba(15, 23, 42, 0.6); padding: 8px; border-radius: 8px; margin: 6px 0 0; font-size: 0.68rem; }

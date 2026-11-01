@@ -15,9 +15,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { validateEventPlan } from '../src/utils/schemaValidator';
 import { sanitizeHtml, ClientRateLimiter, exportPlanToJson } from '../src/services/security';
-import { calculateBudgetBreakdown, generateRunOfShow, DOMAIN_PRESETS } from '../src/services/plannerGenerator';
+import { calculateBudgetBreakdown, generateRunOfShow, createDefaultEventPlan } from '../src/services/plannerGenerator';
+import { DOMAIN_PRESETS } from '../src/hooks/useEventWizard';
 import { EventType } from '../src/types';
 
 interface CriterionResult {
@@ -29,7 +31,7 @@ interface CriterionResult {
   checks: { name: string; passed: boolean; details: string }[];
 }
 
-const ROOT_DIR = path.resolve(__dirname, '..');
+const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 // Helper to read text file safely
 function readFileSafe(relPath: string): string {
@@ -250,23 +252,24 @@ function auditSecurity(): CriterionResult {
     menu: [],
   };
 
-  const validValidation = validateEventPlan(testPlan);
-  const maliciousPayload = JSON.stringify({
-    ...testPlan,
-    __proto__: { backdoor: 'polluted' },
-    constructor: { prototype: { compromised: true } },
-    title: '<script>alert("XSS")</script>Injected',
-  });
-  const sanitizedValidation = validateEventPlan(maliciousPayload);
+  const basePlan = { ...createDefaultEventPlan(), title: testPlan.title };
+  const validValidation = validateEventPlan(basePlan);
+  // Polluted payloads must be rejected outright; XSS-only payloads accepted with markup neutralised.
+  const pollutedPayload = JSON.stringify({ ...basePlan, constructor: { prototype: { compromised: true } } });
+  const pollutedValidation = validateEventPlan(pollutedPayload);
+  const xssValidation = validateEventPlan(
+    JSON.stringify({ ...basePlan, title: '<script>alert("XSS")</script>Injected' })
+  );
 
   const schemaPassed =
     validValidation.isValid &&
-    sanitizedValidation.isValid &&
-    !sanitizedValidation.sanitizedPlan?.title.includes('<script>');
+    !pollutedValidation.isValid &&
+    xssValidation.isValid &&
+    !/[<>]/.test(xssValidation.sanitizedPlan?.title ?? '<');
   checks.push({
     name: 'Runtime Schema Validation & Malicious Payload Neutralization',
     passed: schemaPassed,
-    details: 'Zod-equivalent defensive schema validator enforces bounds and strips prototype injections',
+    details: 'Rejects prototype-pollution payloads and neutralises markup in accepted plans',
   });
   if (schemaPassed) points += 5;
 
@@ -291,10 +294,10 @@ function auditSecurity(): CriterionResult {
   if (protoPassed) points += 4;
 
   // 4. Rate Limiter Burst Defense
-  const limiter = new ClientRateLimiter(5, 1000);
+  const limiter = new ClientRateLimiter({ maxTokens: 5, refillRate: 5, refillIntervalMs: 60000 });
   let burstsAllowed = 0;
   for (let i = 0; i < 10; i++) {
-    if (limiter.checkLimit('test-client')) {
+    if (limiter.tryConsume(1)) {
       burstsAllowed++;
     }
   }
@@ -309,7 +312,8 @@ function auditSecurity(): CriterionResult {
   // 5. XSS Sanitization Engine
   const dirtyHtml = '<img src=x onerror="alert(document.cookie)"><script>malicious()</script>Hello World';
   const cleanHtml = sanitizeHtml(dirtyHtml);
-  const xssPassed = !cleanHtml.includes('<script>') && !cleanHtml.includes('onerror=') && cleanHtml.includes('Hello World');
+  // Escaped text is inert: the check is that no raw angle brackets survive.
+  const xssPassed = !/[<>]/.test(cleanHtml) && cleanHtml.includes('Hello World');
   checks.push({
     name: 'Zero-Dependency XSS HTML Entity Sanitizer',
     passed: xssPassed,
@@ -613,21 +617,24 @@ function auditProblemAlignment(): CriterionResult {
   // 2. Gemini Copilot Contextual Assistant with Heuristic Fallback
   const aiCopilot = readFileSafe('src/services/aiCopilot.ts');
   const hasCopilot =
-    aiCopilot.includes('generateCopilotResponse') &&
+    aiCopilot.includes('export async function askEventCopilot') &&
     aiCopilot.includes('generativelanguage.googleapis.com') &&
-    aiCopilot.includes('heuristicFallback');
+    aiCopilot.includes("'x-goog-api-key'") &&
+    aiCopilot.includes('function offlineAnswer');
   checks.push({
     name: 'Gemini Copilot Engine with Offline Heuristic Fallback',
     passed: hasCopilot,
-    details: 'Dual-mode AI copilot with live Gemini 1.5 Flash streaming + zero-latency local fallback',
+    details: 'Plan-grounded Gemini 2.5 Flash copilot (header-auth, injection-fenced prompt) with zero-latency offline fallback',
   });
   if (hasCopilot) points += 3;
 
   // 3. Speech & Toast Rehearsal Studio
   const speechStudio = readFileSafe('src/components/SpeechStudio.tsx');
+  const speechHook = readFileSafe('src/hooks/useSpeech.ts');
   const hasSpeechStudio =
-    speechStudio.includes('teleprompter') ||
-    (speechStudio.includes('Speech Teleprompter') && speechStudio.includes('speak('));
+    /teleprompter/i.test(speechStudio) &&
+    speechHook.includes('speechSynthesis') &&
+    speechHook.includes('SpeechSynthesisUtterance');
   checks.push({
     name: 'AI Speech & Toast Studio (Rehearsal Teleprompter & TTS)',
     passed: hasSpeechStudio,
@@ -731,7 +738,7 @@ export function runRigorousBenchmark(): { totalScore: number; passed: boolean } 
 }
 
 // Execute benchmark when run directly
-if (import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const result = runRigorousBenchmark();
   if (!result.passed) {
     process.exit(1);

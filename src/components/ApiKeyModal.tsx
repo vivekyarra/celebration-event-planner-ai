@@ -8,6 +8,10 @@ interface ApiKeyModalProps {
   onSaveKey: (key: string) => void;
 }
 
+/**
+ * Dialog for adding or clearing the optional Google Gemini API key. The key is kept in this
+ * browser only; without it the copilot runs on the offline heuristic engine.
+ */
 export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
   isOpen,
   onClose,
@@ -46,7 +50,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
 
         <form onSubmit={handleSave}>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.5' }}>
-            CelebriteAI operates on <strong>Google Gemini 1.5 Flash</strong> for live interactive event generation and copilot advising.
+            CelebriteAI operates on <strong>Google Gemini 2.5 Flash</strong> for live, plan-aware copilot answers. Your key stays in this browser and is sent only to Google in a request header.
           </p>
 
           <div

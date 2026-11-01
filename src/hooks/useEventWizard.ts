@@ -133,6 +133,24 @@ export interface UseEventWizardOptions {
   onPlanCreated?: (plan: EventPlan) => void;
 }
 
+/** Value type accepted by `handleFieldChange` for each wizard form field. */
+export interface WizardFieldValues {
+  title: string;
+  eventType: EventType;
+  venueType: VenueType;
+  date: string;
+  startTime: string;
+  endTime: string;
+  guestCount: number;
+  totalBudget: number;
+  themeVibe: string;
+  dietaryInput: string;
+  /** Alias of `dietaryInput` (comma-separated dietary tags). */
+  dietaryTags: string;
+}
+
+export type WizardField = keyof WizardFieldValues;
+
 export interface UseEventWizardReturn {
   eventType: EventType;
   title: string;
@@ -160,7 +178,7 @@ export interface UseEventWizardReturn {
   setVenueType: (newVenue: VenueType) => void;
   setThemeVibe: (newTheme: string) => void;
   setDietaryInput: (newDietary: string) => void;
-  handleFieldChange: (field: string, value: any) => void;
+  handleFieldChange: <K extends WizardField>(field: K, value: WizardFieldValues[K]) => void;
   loadPreset: (presetName: string) => void;
   resetDefaults: () => void;
   validate: () => { isValid: boolean; fieldErrors: FieldErrors; validationErrors: string[] };
@@ -232,42 +250,21 @@ export function useEventWizard(options?: UseEventWizardOptions): UseEventWizardR
   }, []);
 
   const handleFieldChange = useCallback(
-    (field: string, value: any) => {
-      switch (field) {
-        case 'title':
-          setTitle(value);
-          break;
-        case 'eventType':
-          setEventType(value as EventType);
-          break;
-        case 'venueType':
-          setVenueType(value as VenueType);
-          break;
-        case 'date':
-          setDate(value);
-          break;
-        case 'startTime':
-          setStartTime(value);
-          break;
-        case 'endTime':
-          setEndTime(value);
-          break;
-        case 'guestCount':
-          setGuestCount(value);
-          break;
-        case 'totalBudget':
-          setTotalBudget(value);
-          break;
-        case 'themeVibe':
-          setThemeVibe(value);
-          break;
-        case 'dietaryInput':
-        case 'dietaryTags':
-          setDietaryInput(value);
-          break;
-        default:
-          break;
-      }
+    <K extends WizardField>(field: K, value: WizardFieldValues[K]) => {
+      const fieldSetters: { [F in WizardField]: (v: WizardFieldValues[F]) => void } = {
+        title: setTitle,
+        eventType: (v) => setEventType(v),
+        venueType: setVenueType,
+        date: setDate,
+        startTime: setStartTime,
+        endTime: setEndTime,
+        guestCount: setGuestCount,
+        totalBudget: setTotalBudget,
+        themeVibe: setThemeVibe,
+        dietaryInput: setDietaryInput,
+        dietaryTags: setDietaryInput,
+      };
+      fieldSetters[field](value);
     },
     [setTitle, setEventType, setGuestCount, setTotalBudget, setDietaryInput]
   );

@@ -1,3 +1,7 @@
+/**
+ * Shared domain types for CelebriteAI event plans.
+ */
+
 export type EventType =
   | 'wedding'
   | 'birthday'
@@ -104,6 +108,7 @@ export interface ChatMessage {
   actions?: { label: string; actionId: string }[];
 }
 
+/** Complete, persisted plan for one celebration; the single source of truth for every module. */
 export interface EventPlan {
   id: string;
   title: string;

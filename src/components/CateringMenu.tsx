@@ -10,6 +10,10 @@ interface CateringMenuProps {
   onUpdateMenu: (newMenu: MenuItem[]) => void;
 }
 
+/**
+ * Culinary menu editor grouped by course, with dietary tags and validated cost inputs
+ * that feed the dietary safety audit.
+ */
 export const CateringMenu: React.FC<CateringMenuProps> = ({
   plan,
   onUpdateMenu,

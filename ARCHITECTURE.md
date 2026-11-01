@@ -74,7 +74,7 @@ Zero-dependency, high-contrast, fully accessible UI components:
 
 ### 2.4 Heuristic & GenAI Services Layer (`src/services/`)
 - **`plannerGenerator.ts`**: Pure deterministic rule engine providing instantaneous (< 5ms) baseline plans for any celebration type without requiring an internet connection or API token.
-- **`aiCopilot.ts`**: Integration with Google Gemini (`gemini-1.5-flash`), enriched with structured event prompt injection, markdown parsing, and fallback handling.
+- **`aiCopilot.ts`**: Integration with Google Gemini (`gemini-2.5-flash`), enriched with structured event prompt injection, markdown parsing, and fallback handling.
 - **`security.ts`**: Multi-tiered security defenses including HTML sanitization, numeric range clamping, token-bucket rate limiting, and schema validation.
 
 ---

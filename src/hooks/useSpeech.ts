@@ -1,14 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+
+/** Feature-detects the Web Speech synthesis API (stable for the page lifetime). */
+const detectSpeechSupport = (): boolean =>
+  typeof window !== 'undefined' && 'speechSynthesis' in window;
 
 export function useSpeech() {
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isSupported, setIsSupported] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      setIsSupported(true);
-    }
-  }, []);
+  const [isSupported] = useState(detectSpeechSupport);
 
   const speak = useCallback((text: string, rate: number = 1.0) => {
     if (!isSupported) return;

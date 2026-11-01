@@ -17,62 +17,63 @@ interface TimeRemaining {
   isToday: boolean;
 }
 
+/** Pure helper: time remaining from `now` until the event start. */
+const calculateTimeRemaining = (
+  eventDate: string,
+  startTime: string,
+  now: number
+): TimeRemaining => {
+  try {
+    // Normalize date string (YYYY-MM-DD) and startTime (HH:mm)
+    const targetString = startTime
+      ? `${eventDate}T${startTime.length === 5 ? startTime : '12:00'}:00`
+      : `${eventDate}T12:00:00`;
+
+    const targetTime = new Date(targetString).getTime();
+    const diff = targetTime - now;
+
+    if (isNaN(targetTime)) {
+      return { totalMs: 0, days: 0, hours: 0, minutes: 0, seconds: 0, isPast: false, isToday: false };
+    }
+
+    const isPast = diff < 0;
+    const absDiff = Math.abs(diff);
+
+    const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((absDiff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((absDiff / (1000 * 60)) % 60);
+    const seconds = Math.floor((absDiff / 1000) % 60);
+
+    const isToday = !isPast && days === 0;
+
+    return {
+      totalMs: diff,
+      days,
+      hours,
+      minutes,
+      seconds,
+      isPast,
+      isToday,
+    };
+  } catch {
+    return { totalMs: 0, days: 0, hours: 0, minutes: 0, seconds: 0, isPast: false, isToday: false };
+  }
+};
+
 export const CountdownTimer: React.FC<CountdownTimerProps> = ({
   eventDate,
   startTime = '12:00',
   eventTitle,
 }) => {
-  const calculateTimeRemaining = (): TimeRemaining => {
-    try {
-      // Normalize date string (YYYY-MM-DD) and startTime (HH:mm)
-      const targetString = startTime
-        ? `${eventDate}T${startTime.length === 5 ? startTime : '12:00'}:00`
-        : `${eventDate}T12:00:00`;
-      
-      const targetTime = new Date(targetString).getTime();
-      const now = Date.now();
-      const diff = targetTime - now;
-
-      if (isNaN(targetTime)) {
-        return { totalMs: 0, days: 0, hours: 0, minutes: 0, seconds: 0, isPast: false, isToday: false };
-      }
-
-      const isPast = diff < 0;
-      const absDiff = Math.abs(diff);
-
-      const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((absDiff / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((absDiff / (1000 * 60)) % 60);
-      const seconds = Math.floor((absDiff / 1000) % 60);
-
-      const isToday = !isPast && days === 0;
-
-      return {
-        totalMs: diff,
-        days,
-        hours,
-        minutes,
-        seconds,
-        isPast,
-        isToday,
-      };
-    } catch {
-      return { totalMs: 0, days: 0, hours: 0, minutes: 0, seconds: 0, isPast: false, isToday: false };
-    }
-  };
-
-  const [timeLeft, setTimeLeft] = useState<TimeRemaining>(calculateTimeRemaining);
+  // Current wall-clock time, ticked once per second; the countdown is derived from it.
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    // Initial sync
-    setTimeLeft(calculateTimeRemaining());
-
-    const interval = setInterval(() => {
-      setTimeLeft(calculateTimeRemaining());
-    }, 1000);
-
+    const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [eventDate, startTime]);
+  }, []);
+
+  const timeLeft = calculateTimeRemaining(eventDate, startTime, now);
 
   const readableAnnouncement = timeLeft.isPast
     ? `The event ${eventTitle || ''} took place ${timeLeft.days} days ago.`

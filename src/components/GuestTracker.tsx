@@ -4,9 +4,6 @@ import {
   UserPlus,
   Search,
   Download,
-  CheckCircle,
-  Clock,
-  XCircle,
 } from 'lucide-react';
 import { EventPlan, Guest, RSVPStatus } from '../types';
 import { useGuestManager } from '../hooks/useGuestManager';
@@ -16,6 +13,9 @@ interface GuestTrackerProps {
   onUpdateGuests: (newGuests: Guest[]) => void;
 }
 
+/**
+ * Guest list and RSVP tracker with dietary needs, plus-ones and table assignment.
+ */
 export const GuestTracker: React.FC<GuestTrackerProps> = ({
   plan,
   onUpdateGuests,

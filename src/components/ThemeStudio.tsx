@@ -17,6 +17,10 @@ interface ThemeStudioProps {
   onUpdatePalette?: (newPalette: ThemePalette) => void;
 }
 
+/**
+ * Theme and invitation studio: editable colour palette with contrast checks, ambience
+ * guidance and multi-tone invitation copy with share links.
+ */
 export const ThemeStudio: React.FC<ThemeStudioProps> = ({ plan, onUpdatePalette }) => {
   const [copiedHex, setCopiedHex] = useState<string | null>(null);
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);

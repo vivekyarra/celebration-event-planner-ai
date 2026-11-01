@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   DollarSign,
   Clock,
@@ -42,6 +42,11 @@ export type ActiveTab =
   | 'speech'
   | 'scenarios';
 
+/**
+ * Root application shell: owns the persisted EventPlan, API key and active tab, and wires
+ * every planning module (budget, timeline, theme, menu, guests, vendors, speech, scenarios)
+ * plus the Gemini copilot drawer to that single source of truth.
+ */
 export const App: React.FC = () => {
   const [plan, setPlan] = useState<EventPlan>(() => {
     const saved = localStorage.getItem('celebrite_event_plan');
@@ -68,19 +73,6 @@ export const App: React.FC = () => {
 
   // Screen reader announcer for WCAG 2.1 AA live accessibility updates
   const { announce } = useAnnouncer();
-
-  // Memoized derived KPI metrics for high-efficiency updates
-  const totalSpent = useMemo(() => {
-    return plan.budgetBreakdown.reduce((sum, cat) => sum + cat.spentAmount, 0);
-  }, [plan.budgetBreakdown]);
-
-  const confirmedCount = useMemo(() => {
-    return plan.guests.filter((g) => g.rsvpStatus === 'confirmed').length;
-  }, [plan.guests]);
-
-  const pendingCount = useMemo(() => {
-    return plan.guests.filter((g) => g.rsvpStatus === 'pending').length;
-  }, [plan.guests]);
 
   useEffect(() => {
     const handleGlobalKey = (e: KeyboardEvent) => {

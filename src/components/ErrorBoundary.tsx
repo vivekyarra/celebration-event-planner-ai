@@ -1,6 +1,10 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
+/**
+ * Props for {@link ErrorBoundary}, which catches render errors in a module and shows an
+ * accessible recovery panel instead of a blank screen.
+ */
 export interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;

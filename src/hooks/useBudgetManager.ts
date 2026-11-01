@@ -6,7 +6,8 @@
  * @module hooks/useBudgetManager
  */
 
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useSyncedState } from './useSyncedState';
 import { BudgetCategory, BudgetTier } from '../types';
 
 export interface UseBudgetManagerReturn {
@@ -86,20 +87,12 @@ export function useBudgetManager(
   initialTotalBudget: number = 0,
   onUpdateBudget?: (newCategories: BudgetCategory[], newTotalBudget?: number) => void
 ): UseBudgetManagerReturn {
-  const [categories, setCategories] = useState<BudgetCategory[]>(initialCategories);
-  const [totalBudget, setTotalBudget] = useState<number>(initialTotalBudget);
+  // Local copies that re-seed whenever the corresponding props change externally
+  const [categories, setCategories] = useSyncedState<BudgetCategory[]>(initialCategories);
+  const [totalBudget, setTotalBudget] = useSyncedState<number>(initialTotalBudget);
+  // Reference budget that tier multipliers scale from (reset by props or rebalancing)
+  const [baselineBudget, setBaselineBudget] = useSyncedState<number>(initialTotalBudget);
   const [currentTier, setCurrentTier] = useState<BudgetTier>('balanced');
-  const baselineBudgetRef = useRef<number>(initialTotalBudget);
-
-  // Synchronize internal state when props update externally
-  useEffect(() => {
-    setCategories(initialCategories);
-  }, [initialCategories]);
-
-  useEffect(() => {
-    setTotalBudget(initialTotalBudget);
-    baselineBudgetRef.current = initialTotalBudget;
-  }, [initialTotalBudget]);
 
   const commitUpdate = useCallback(
     (newCategories: BudgetCategory[], newBudget?: number) => {
@@ -111,7 +104,7 @@ export function useBudgetManager(
         onUpdateBudget(newCategories, newBudget);
       }
     },
-    [onUpdateBudget]
+    [onUpdateBudget, setCategories, setTotalBudget]
   );
 
   const updateCategoryAllocation = useCallback(
@@ -208,7 +201,7 @@ export function useBudgetManager(
   const rebalanceBudget = useCallback(
     (newBudget?: number) => {
       const targetBudget = typeof newBudget === 'number' ? Math.max(0, newBudget) : totalBudget;
-      baselineBudgetRef.current = targetBudget;
+      setBaselineBudget(targetBudget);
 
       const currentTotalPct = categories.reduce((sum, c) => sum + (c.percentage || 0), 0);
       const updated = categories.map((cat) => {
@@ -230,7 +223,7 @@ export function useBudgetManager(
       });
       commitUpdate(updated, targetBudget);
     },
-    [categories, totalBudget, commitUpdate]
+    [categories, totalBudget, commitUpdate, setBaselineBudget]
   );
 
   const applyBudgetTier = useCallback(
@@ -243,7 +236,7 @@ export function useBudgetManager(
       };
 
       const multiplier = tierMultipliers[tier] ?? 1.0;
-      const base = baselineBudgetRef.current > 0 ? baselineBudgetRef.current : totalBudget;
+      const base = baselineBudget > 0 ? baselineBudget : totalBudget;
       const targetBudget = Math.round(base * multiplier);
 
       const totalPct = categories.reduce((sum, c) => sum + (c.percentage || 0), 0);
@@ -259,7 +252,7 @@ export function useBudgetManager(
 
       commitUpdate(updated, targetBudget);
     },
-    [categories, totalBudget, commitUpdate]
+    [categories, totalBudget, baselineBudget, commitUpdate]
   );
 
   // Memoized Derived Metrics

@@ -3,13 +3,12 @@ import {
   validateEventPlan,
   detectPrototypePollution,
   preventPrototypePollution,
-  RateLimiter,
   createRateLimiter,
   sanitizeHtml,
   stripHtml,
 } from '../utils/schemaValidator';
 import { createDefaultEventPlan } from '../services/plannerGenerator';
-import { EventPlan } from '../types';
+import type { EventType } from '../types';
 
 describe('Task 1: Comprehensive Schema & Security Test Suite', () => {
   it('1. valid default event plan passes validation without errors', () => {
@@ -76,12 +75,12 @@ describe('Task 1: Comprehensive Schema & Security Test Suite', () => {
     const basePlan = createDefaultEventPlan();
 
     // Disallowed event type 'party'
-    const invalidParty = validateEventPlan({ ...basePlan, eventType: 'party' as any });
+    const invalidParty = validateEventPlan({ ...basePlan, eventType: 'party' as unknown as EventType });
     expect(invalidParty.isValid).toBe(false);
     expect(invalidParty.errors.some((e) => e.includes('Invalid eventType "party"'))).toBe(true);
 
     // Disallowed event type 'rave'
-    const invalidRave = validateEventPlan({ ...basePlan, eventType: 'rave' as any });
+    const invalidRave = validateEventPlan({ ...basePlan, eventType: 'rave' as unknown as EventType });
     expect(invalidRave.isValid).toBe(false);
   });
 

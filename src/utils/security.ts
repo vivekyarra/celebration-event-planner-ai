@@ -23,72 +23,6 @@ export interface ValidationResult {
 }
 
 /**
- * Escapes unsafe HTML characters to prevent XSS.
- */
-export function sanitizeHtml(input: string): string {
-  if (!input) return '';
-  return input
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-/**
- * Strips HTML tags entirely.
- */
-export function stripHtml(input: string): string {
-  if (!input) return '';
-  return input.replace(/<[^>]*>?/gm, '');
-}
-
-/**
- * Validates currency amount ensuring positive finite number.
- */
-export function validateCurrencyAmount(val: number): boolean {
-  return typeof val === 'number' && !isNaN(val) && isFinite(val) && val >= 0;
-}
-
-/**
- * Validates that a numeric value is within an allowable range.
- */
-export function validateNumericRange(
-  val: number,
-  min: number,
-  max: number,
-  fieldName: string = 'value'
-): { valid: boolean; error?: string } {
-  if (typeof val !== 'number' || isNaN(val) || !isFinite(val)) {
-    return { valid: false, error: `Invalid "${fieldName}": Must be a finite number.` };
-  }
-  if (val < min || val > max) {
-    return {
-      valid: false,
-      error: `Invalid "${fieldName}": Must be between ${min} and ${max.toLocaleString()}.`,
-    };
-  }
-  return { valid: true };
-}
-
-/**
- * Strict RFC 5322 regex validation for email.
- */
-export function validateEmail(email: string): boolean {
-  if (!email || typeof email !== 'string') return false;
-  const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  return re.test(email.trim());
-}
-
-/**
- * Masks sensitive API keys for safe UI display.
- */
-export function maskApiKey(apiKey: string): string {
-  if (!apiKey || apiKey.length < 8) return '';
-  return `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
-}
-
-/**
  * Safe currency formatter resilient to NaN, Infinity, zero, and negative values.
  */
 export function formatCurrency(amount: number, currency: string = 'USD'): string {
@@ -245,80 +179,21 @@ export function validateEventPlan(plan: unknown): ValidationResult {
   };
 }
 
-/**
- * Token Bucket Rate Limiter
- * Enforces rate limits on AI queries and API calls.
+/*
+ * Core sanitization, validation and rate-limiting primitives have a single
+ * implementation in services/security; they are re-exported here so existing
+ * `utils/security` and `utils/schemaValidator` imports keep working.
  */
-export class RateLimiter {
-  private tokens: number;
-  private readonly maxTokens: number;
-  private readonly refillRateMs: number;
-  private readonly refillAmount: number;
-  private lastRefill: number;
-
-  constructor(maxTokens: number = 10, refillRateMs: number = 1000, refillAmount: number = 1) {
-    this.maxTokens = Math.max(1, maxTokens);
-    this.tokens = this.maxTokens;
-    this.refillRateMs = Math.max(10, refillRateMs);
-    this.refillAmount = Math.max(1, refillAmount);
-    this.lastRefill = Date.now();
-  }
-
-  /**
-   * Consumes `count` tokens if available. Returns true if allowed, false if rejected.
-   */
-  consume(count: number = 1): boolean {
-    this.refill();
-    if (count <= 0) return true;
-    if (this.tokens >= count) {
-      this.tokens -= count;
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Alias for consume(1).
-   */
-  tryConsume(): boolean {
-    return this.consume(1);
-  }
-
-  /**
-   * Returns current token balance after applying elapsed refills.
-   */
-  getTokens(): number {
-    this.refill();
-    return this.tokens;
-  }
-
-  /**
-   * Resets rate limiter back to max capacity.
-   */
-  reset(): void {
-    this.tokens = this.maxTokens;
-    this.lastRefill = Date.now();
-  }
-
-  private refill(): void {
-    const now = Date.now();
-    const elapsed = now - this.lastRefill;
-    if (elapsed >= this.refillRateMs) {
-      const intervals = Math.floor(elapsed / this.refillRateMs);
-      this.tokens = Math.min(this.maxTokens, this.tokens + intervals * this.refillAmount);
-      this.lastRefill = now;
-    }
-  }
-}
-
-export function createRateLimiter(
-  maxTokens: number = 10,
-  refillRateMs: number = 1000
-): RateLimiter {
-  return new RateLimiter(maxTokens, refillRateMs);
-}
-
 export {
+  sanitizeHtml,
+  stripHtml,
+  validateCurrencyAmount,
+  validateNumericRange,
+  validateEmail,
+  maskApiKey,
+  RateLimiter,
+  ClientRateLimiter,
+  createRateLimiter,
   HEX_COLOR_REGEX,
   isValidHexColor,
   calculateRelativeLuminance,
@@ -329,3 +204,4 @@ export {
   getAccessibleName,
   exportPlanToJson,
 } from '../services/security';
+export type { NumericRangeResult, RateLimiterOptions } from '../services/security';
