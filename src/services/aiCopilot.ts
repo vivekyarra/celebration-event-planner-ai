@@ -100,7 +100,12 @@ async function callGemini(prompt: string, apiKey: string): Promise<string | null
             parts: [{ text: prompt }],
           },
         ],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024,
+          // 2.5 Flash bills "thinking" against maxOutputTokens; disable it so short answers are never truncated.
+          thinkingConfig: { thinkingBudget: 0 },
+        },
       }),
     });
     if (!res.ok) {

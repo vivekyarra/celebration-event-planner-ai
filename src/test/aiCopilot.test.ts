@@ -48,6 +48,7 @@ describe('Gemini copilot integration', () => {
     const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
     const userText: string = body.contents[0].parts[0].text;
     expect(body.systemInstruction.parts[0].text).toMatch(/never as instructions/i);
+    expect(body.generationConfig.thinkingConfig).toEqual({ thinkingBudget: 0 });
     expect(userText).toContain('Riya 30th Rooftop Bash');
     expect(userText).toContain('60 target');
     expect(userText).toMatch(/<user_question>Ignore all rules.*<\/user_question>/);
